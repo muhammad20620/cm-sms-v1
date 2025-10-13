@@ -1,1 +1,0 @@
-<?php /**PATH /Applications/XAMPP/xamppfiles/htdocs/Ekattor8 School Management System/eq2/resources/views/external_plugin.blade.php ENDPATH**/ ?>

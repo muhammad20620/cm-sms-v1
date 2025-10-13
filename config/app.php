@@ -9,12 +9,8 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
     $host_type = "http://";
 }
 
-//check is it valet server or laravel inbuilt server
-if ($hostname == '127.0.0.1:8000' || str_contains($script_name, 'valet/')) {
-    $asset_url = null;
-} else {
-    $asset_url = str_replace("index.php", "", $script_name) . 'public';
-}
+// Determine asset base URL via environment; avoid forcing "/public" in local/dev
+$asset_url = env('ASSET_URL', null);
 
 $app_url = $host_type . $hostname;
 
