@@ -9,7 +9,7 @@
 	<meta name="author" content="Creativeitem" />
 	<meta name="csrf-token" content="{{ csrf_token() }}">
 	<link rel="shortcut icon" href="{{ asset('assets/uploads/logo/favicon.png') }}">
-	<title>{{ phrase('Installation').' | '.phrase('Ekattor') }}</title>
+	<title>{{ phrase('Installation').' | '.phrase('School Manager') }}</title>
 	
 	<!-- Bootstrap CSS -->
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/vendors/bootstrap-5.1.3/css/bootstrap.min.css') }}">

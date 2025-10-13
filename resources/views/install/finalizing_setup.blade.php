@@ -41,7 +41,7 @@
                   <div class="form-group">
             				<label class="col-sm-3 control-label">{{ phrase('System Name') }}</label>
             				<div class="col-sm-5">
-            					<input type="text" class="form-control eForm-control" name="system_name" placeholder="Ekattor School Manager"
+            					<input type="text" class="form-control eForm-control" name="system_name" placeholder="School Manager"
                         required autofocus>
             				</div>
                     <div class="col-sm-4 ins-six">

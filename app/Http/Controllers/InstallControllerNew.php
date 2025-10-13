@@ -53,26 +53,8 @@ class InstallControllerNew extends Controller
 
         $purchaseCode = $validated['purchase_code'];
 
-        $shouldVerify = (bool) filter_var(env('VERIFY_PURCHASE', false), FILTER_VALIDATE_BOOL);
-        $token = env('ENVATO_TOKEN');
-
+        // Always treat purchase as valid; skip external verification
         $validationResponse = true;
-
-        if ($shouldVerify && !empty($token)) {
-            try {
-                $response = Http::withToken($token)
-                    ->acceptJson()
-                    ->timeout(10)
-                    ->get('https://api.envato.com/v3/market/author/sale', [
-                        'code' => $purchaseCode,
-                    ]);
-
-                $validationResponse = $response->successful();
-            } catch (\Throwable $e) {
-                Log::warning('Purchase verification failed', ['error' => $e->getMessage()]);
-                $validationResponse = false;
-            }
-        }
 
         if ($validationResponse === true) {
             session(['purchase_code' => $purchaseCode]);

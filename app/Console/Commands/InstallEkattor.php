@@ -38,7 +38,7 @@ class InstallEkattor extends Command
      *
      * @var string
      */
-    protected $description = 'Install Ekattor locally using an existing MySQL database.';
+    protected $description = 'Install locally using an existing MySQL database.';
 
     /**
      * Execute the console command.

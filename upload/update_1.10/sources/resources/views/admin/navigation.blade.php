@@ -34,7 +34,7 @@
     <!-- Select2 css -->
     <link rel="stylesheet" href="{{ asset('assets/css/select2.min.css') }}" />
     <!--Light box Image Gallery-->
-    <link rel="stylesheet" type="text/css" href="/ekattor8_v9/Ekattor8/public/assets/css/lightbox.css">
+    <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/lightbox.css') }}">
     <!-- SummerNote Css -->
     <link rel="stylesheet" href="{{ asset('assets/css/summernote-lite.min.css') }}"/>
 
@@ -1017,7 +1017,7 @@
     <!--html2canvas Script-->
     <script src="{{ asset('assets/js/html2canvas.min.js') }}"></script>
     <!---Image Gallery--->
-    <script src="/ekattor8_v9/Ekattor8/public/assets/js/lightbox-plus-jquery.js"></script>
+    <script src="{{ asset('assets/js/lightbox-plus-jquery.js') }}"></script>
     <script>
 
         // JavaScript to handle language selection

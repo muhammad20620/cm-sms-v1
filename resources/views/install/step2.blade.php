@@ -40,11 +40,6 @@
                   </div>
                 </form>
                 <br>
-                <p>
-                  <a href="https://help.market.envato.com/hc/en-us/articles/202822600-Where-Is-My-Purchase-Code-" target="_blank">
-                    <strong>{{ phrase('Where to get my purchase code ?') }}</strong>
-                  </a>
-                </p>
               </div>
             </div>
           </div>

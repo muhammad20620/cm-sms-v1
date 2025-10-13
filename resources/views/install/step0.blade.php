@@ -9,7 +9,7 @@
     			<!-- panel body -->
     			<div class="panel-body ins-four">
             <p class="ins-four">
-              {{ phrase('Welcome to Ekattor School Management System Installation. You will need to know the following items before proceeding.') }}
+              {{ phrase('Welcome to School Management System Installation. You will need to know the following items before proceeding.') }}
             </p>
             <ol>
               <li>{{ phrase('Codecanyon purchase code') }}</li>

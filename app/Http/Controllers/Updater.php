@@ -77,21 +77,13 @@ class Updater extends Controller
 		//check ias addon or main product update
 		if(array_key_exists('is_addon', $config) && strval($config['is_addon']) == "1"){
 
-			if(isset($request->purchase_code) && $request->purchase_code != ''){
-				$response = (new SuperAdminController)->curl_request($request->purchase_code);
-				
-				if($response != 1) {
-					return redirect()->back()->with('error', get_phrase('Purchase code verification failed'));
-				} else{
-					$duplicate_code_check = DB::table('addons')->where('purchase_code', $request->purchase_code)->get();
-					if(count($duplicate_code_check) > 0){
-						return redirect()->back()->with('error', get_phrase('You have already use this purchase code'));
-					}
-				}
-				
-			} else {
-				return redirect()->back()->with('error', get_phrase('Purchase code verification failed'));
-			}
+            // Skip remote purchase verification; only check for duplicate if provided
+            if(isset($request->purchase_code) && $request->purchase_code != ''){
+                $duplicate_code_check = DB::table('addons')->where('purchase_code', $request->purchase_code)->get();
+                if(count($duplicate_code_check) > 0){
+                    return redirect()->back()->with('error', get_phrase('You have already use this purchase code'));
+                }
+            }
 
 
 			$pre_version = $product_current_version;
