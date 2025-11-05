@@ -49,6 +49,7 @@ Auth::routes();
 Route::controller(HomeController::class)->group(function () {
 
     Route::get('/', 'home')->name('landingPage');
+    Route::get('contact', 'contact')->name('contact');
     Route::post('school/create', 'schoolCreate')->name('school.create');
     Route::get('web_redirect_to_pay_fee', 'webRedirectToPayFee')->name('webRedirectToPayFee');  
 

@@ -13,14 +13,22 @@ $msg_user_lists = DB::table('users')
             });
     })
     ->join('chats', 'chats.message_thrade', '=', 'message_thrades.id')
-    ->select('users.*', 'message_thrades.*', DB::raw('MAX(chats.id) as latest_chat_id'))
+    ->select(
+        'users.id as user_id',
+        'users.name',
+        'users.user_information',
+        'message_thrades.id as id',
+        'message_thrades.sender_id',
+        'message_thrades.reciver_id',
+        DB::raw('MAX(chats.id) as latest_chat_id')
+    )
     ->where('message_thrades.school_id', auth()->user()->school_id)
     ->where(function($query) {
         $query->where('message_thrades.sender_id', auth()->user()->id)
               ->orWhere('message_thrades.reciver_id', auth()->user()->id);
     })
     ->where('users.id', '<>', auth()->user()->id)
-    ->groupBy('message_thrades.id', 'users.id') // Group by message thread and user
+    ->groupBy('id', 'message_thrades.sender_id', 'message_thrades.reciver_id', 'user_id', 'users.name', 'users.user_information') // Group by selected non-aggregates
     ->orderBy('latest_chat_id', 'desc') // Order by latest chat ID in descending order
     ->get();
         

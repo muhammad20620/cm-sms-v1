@@ -72,6 +72,10 @@
         font-size: 42px;
         line-height: 57px;
     }
+    .bannar-content h2 {
+        font-size: 32px;
+        line-height: 57px;
+    }
     .bannar-area {
         padding-bottom: 55px;
     }

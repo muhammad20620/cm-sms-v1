@@ -189,7 +189,6 @@ if (!function_exists('get_settings')) {
     function get_settings($key = '', $type='')
     {
         $global_settings = DB::table('global_settings')->where('key', $key)->value('value');
-
         if($type == 'json') {
             $global_settings = json_decode($global_settings);
         }

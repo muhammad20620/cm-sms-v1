@@ -30,7 +30,9 @@ class HomeController extends Controller
             $frontendFeatures = ($request->has('see_all')) 
             ? FrontendFeature::all() 
             : FrontendFeature::limit(8)->get();
-            return view('frontend.landing_page', ['packages' => $packages, 'faqs' => $faqs, 'users' => $users,'schools' => $schools, 'frontendFeatures' => $frontendFeatures]);
+            // return view('frontend.landing_page', ['packages' => $packages, 'faqs' => $faqs, 'users' => $users,'schools' => $schools, 'frontendFeatures' => $frontendFeatures]);
+            
+            return view('frontend.landing_page_new', ['packages' => $packages, 'faqs' => $faqs, 'users' => $users,'schools' => $schools, 'frontendFeatures' => $frontendFeatures]);
         } else {
             return redirect(route('login'));
         }
@@ -44,6 +46,16 @@ class HomeController extends Controller
     public function superadminHome()
     {
         return view('superadminHome');
+    }
+
+    /**
+     * Show the contact page.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function contact()
+    {
+        return view('frontend.contact');
     }
 
     /**
