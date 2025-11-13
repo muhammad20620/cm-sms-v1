@@ -12,6 +12,7 @@ use App\Http\Controllers\ParentController;
 use App\Http\Controllers\LibrarianController;
 use App\Http\Controllers\AccountantController;
 use App\Http\Controllers\Updater;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,22 +24,6 @@ use App\Http\Controllers\Updater;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-
-// Clear application cache:
-Route::get('/clear-cache', function() {
-    Artisan::call('cache:clear');
-
-    //Artisan::call('route:cache');
-
-    Artisan::call('config:cache');
-
-    Artisan::call('view:clear');
-
-    Artisan::call('optimize:clear');
-
-    return 'Cache cleard';
-})->name('clear.cache');
 
 
 //Auth routes are here

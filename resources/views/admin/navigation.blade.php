@@ -77,7 +77,7 @@ use App\Models\User;
             <div class="img_wrapper">
                 <img height="40px" class="" src="{{ asset('assets/uploads/logo/'.get_settings('white_logo')) }}" alt="" />
             </div>
-            <span class="logo_name">{{ get_settings('navbar_title') }}</span>
+            {{-- <span class="logo_name">{{ get_settings('navbar_title') }}</span> --}}
         </div>
         <div class="closeIcon">
           <span>

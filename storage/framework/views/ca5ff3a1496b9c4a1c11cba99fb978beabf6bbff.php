@@ -37,9 +37,75 @@
                 <div class="col-lg-3 col-md-6 col-sm-6 col-7">
                     <!-- Button Area -->
                     <div class="header-btn">
-                        <a class="login-btn" href="#login">Login</a>
-                        <a class="signUp-btn" href="#register" data-bs-toggle="modal"
-                            data-bs-target="#staticBackdrop">Register</a>
+                        <?php
+                            if (isset(auth()->user()->id) && auth()->user()->id != '') {
+                                if (auth()->user()->role_id == '1') {
+                                    $panel = 'Superadmin';
+                                    $dashboard = route('superadmin.dashboard');
+                                    $user_profile = route('superadmin.profile');
+                                } elseif (auth()->user()->role_id == '2') {
+                                    $panel = 'Administrator';
+                                    $dashboard = route('admin.dashboard');
+                                    $user_profile = route('admin.profile');
+                                } elseif (auth()->user()->role_id == '3') {
+                                    $panel = 'Teacher';
+                                    $dashboard = route('teacher.dashboard');
+                                    $user_profile = route('teacher.profile');
+                                } elseif (auth()->user()->role_id == '4') {
+                                    $panel = 'Accountant';
+                                    $dashboard = route('accountant.dashboard');
+                                    $user_profile = route('accountant.profile');
+                                } elseif (auth()->user()->role_id == '5') {
+                                    $panel = 'Librarian';
+                                    $dashboard = route('librarian.dashboard');
+                                    $user_profile = route('librarian.profile');
+                                } elseif (auth()->user()->role_id == '6') {
+                                    $panel = 'Parent';
+                                    $dashboard = route('parent.dashboard');
+                                    $user_profile = route('parent.profile');
+                                } elseif (auth()->user()->role_id == '7') {
+                                    $panel = 'Student';
+                                    $dashboard = route('student.dashboard');
+                                    $user_profile = route('student.profile');
+                                } elseif (auth()->user()->role_id == '8') {
+                                    $panel = 'Driver';
+                                    $dashboard = route('driver.dashboard');
+                                    $user_profile = route('driver.profile');
+                                } elseif (auth()->user()->role_id == '9') {
+                                    $panel = 'Alumni';
+                                    $dashboard = route('alumni.dashboard');
+                                    $user_profile = route('alumni.profile');
+                                }
+                            }
+                        ?>
+                        <?php if(isset(auth()->user()->id) && auth()->user()->id != ''): ?>
+                            <a class="login-btn" href="<?php echo e($dashboard); ?>"><?php echo e(get_phrase($panel)); ?></a>
+                            <!-- User Profile Start -->
+                            <div class="user-profile">
+                                <button class="us-btn dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <img src="<?php echo e(get_user_image(auth()->user()->id)); ?>" alt="user-img">
+                                </button>
+                                <ul class="dropdown-menu dropmenu-end">
+                                    <li><a class="dropdown-item" href="<?php echo e($user_profile); ?>"><i
+                                                class="fa-solid fa-user"></i> <?php echo e(get_phrase('Profile')); ?></a></li>
+                                    <li><a class="dropdown-item" href="<?php echo e(route('logout')); ?>"
+                                            onclick="event.preventDefault();document.getElementById('logout-form').submit();"><i
+                                                class="fa-solid fa-arrow-right-from-bracket"></i>
+                                            <?php echo e(get_phrase('Log out')); ?></a>
+                                        <form id="logout-form" action="<?php echo e(route('logout')); ?>" method="POST"
+                                            class="d-none">
+                                            <?php echo csrf_field(); ?>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- User Profile End -->
+                        <?php else: ?>
+                            <a class="login-btn" href="<?php echo e(route('login')); ?>"><?php echo e(get_phrase('Login')); ?></a>
+                            <a class="signUp-btn" href="#" data-bs-toggle="modal"
+                                data-bs-target="#staticBackdrop"><?php echo e(get_phrase('Register')); ?></a>
+                        <?php endif; ?>
                         <span class="hambargar-bar"><i class="fa-solid fa-bars"></i></span>
                     </div>
                 </div>
@@ -404,56 +470,68 @@
     <!--  Pricing Area Start   -->
     <section class="pricing-area section-padding" id="price">
         <div class="container-xl">
-            <!-- Title  -->
             <div class="title-area">
                 <h1>Pricing</h1>
                 <h3>Straightforward pricing for every school size</h3>
                 <p>Choose the plan that fits your needs. All plans are flexible and include powerful features to get you
                     started. No hidden fees. No surprises.</p>
             </div>
+            <!-- Title  -->
             <div class="row">
-                <div class="col-lg-4 col-md-6 col-sm-12 mb-3 d-flex">
-                    <div class="pricing-table h-100 w-100 d-flex flex-column justify-content-between">
-                        <span class="trail-price">Starter</span>
-                        <h4>$49<span class="small-text">/month</span></h4>
-                        <p class="color-ff">Up to 300 students</p>
-                        <ul class="pricing-item" style="border-top:0px;">
-                            <li class="color-ff">Admissions & student records</li>
-                            <li class="color-ff">Classes, sections, subjects</li>
-                            <li class="color-ff">Attendance & basic reports</li>
-                            <li class="color-ff">Email support</li>
-                        </ul>
-                        <a href="#" class="subscribe-btn">Choose plan</a>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6 col-sm-12 mb-3 d-flex">
-                    <div class="pricing-table h-100 w-100 d-flex flex-column justify-content-between">
-                        <span class="trail-price">Professional</span>
-                        <h4>$99<span class="small-text">/month</span></h4>
-                        <p class="color-ff">Up to 1,000 students</p>
+                <?php $__currentLoopData = $packages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $package): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php if($package->interval == 'Monthly'): ?>
+                        <?php $interval = 'mon'; ?>
+                    <?php elseif($package->interval == 'Yearly'): ?>
+                        <?php $interval = 'year'; ?>
+                    <?php else: ?>
+                        <?php $interval = 'day'; ?>
+                    <?php endif; ?>
+                    <div class="col-lg-4 col-md-6 col-sm-12 mb-3 d-flex">
+                        <div class="pricing-table h-100 w-100 d-flex flex-column justify-content-between">
+                            <span class="trail-price"><?php echo e($package->name); ?></span>
+                            <h4><?php echo e(currency($package->price)); ?><span class="small-text">/<?php if($package['interval'] == 'life_time'): ?>
+                                        <?php echo e(get_phrase('life time')); ?>
+
+                                    <?php else: ?>
+                                        <?php if($package['interval'] == 'Days'): ?>
+                                        <?php echo e($package['days'] . ' ' . $package['interval']); ?>
+
+                                        <?php else: ?>
+                                        <?php echo e($package['interval']); ?>
+
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </span></h4>
+                            <p class="color-ff">Total Students: <?php echo e($package->studentLimit); ?></p>
+                            <?php
+                                $packages_features = json_decode($package->features);
+                            ?>
+
                             <ul class="pricing-item" style="border-top:0px;">
-                            <li class="color-ff">Everything in Starter</li>
-                            <li class="color-ff">Exams & gradebook PDFs</li>
-                            <li class="color-ff">Online payments (Stripe/PayPal/Razorpay/Paytm)</li>
-                            <li class="color-ff">Noticeboard, events, messaging</li>
+                                <?php $__currentLoopData = $packages_features; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $packages_feature): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <li class="color-ff"><?php echo e($packages_feature); ?></li>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <li class="color-ff">Description: <?php echo e($package->description); ?></li>
                             </ul>
-                        <a href="#" class="subscribe-btn">Choose plan</a>
-                    </div>
+                            <?php if(Auth::check() && auth()->user()->role_id == 1): ?>
+                                <a href="javascript:;" class="subscribe-btn"
+                                    onclick="subscription_warning('<?php echo e(auth()->user()->role_id); ?>')"><?php echo e(get_phrase('Subscribe')); ?></a>
+                            <?php elseif(Auth::check() && auth()->user()->role_id == 2): ?>
+                                <?php $status = subscription_check(auth()->user()->school_id) ?>
+                                <?php if($status != 1): ?>
+                                    <a href="<?php echo e(route('admin.subscription.payment', ['package_id' => $package->id])); ?>"
+                                        class="subscribe-btn"><?php echo e(get_phrase('Subscribe')); ?></a>
+                                <?php else: ?>
+                                    <a href="javascript:;" class="subscribe-btn"
+                                        onclick="subscription_warning('<?php echo e(auth()->user()->role_id); ?>')"><?php echo e(get_phrase('Subscribe')); ?></a>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <a href="javascript:;" class="subscribe-btn"
+                                    onclick="subscription_warning()"><?php echo e(get_phrase('Subscribe')); ?></a>
+                            <?php endif; ?>
                         </div>
-                <div class="col-lg-4 col-md-6 col-sm-12 mb-3 d-flex">
-                    <div class="pricing-table h-100 w-100 d-flex flex-column justify-content-between">
-                        <span class="trail-price">Enterprise</span>
-                        <h4>Contact<span class="small-text">/custom</span></h4>
-                        <p class="color-ff">Unlimited students & branches</p>
-                        <ul class="pricing-item" style="border-top:0px;">
-                            <li class="color-ff">Everything in Professional</li>
-                            <li class="color-ff">Multi‑school management</li>
-                            <li class="color-ff">Advanced reporting</li>
-                            <li class="color-ff">Dedicated support & SLA</li>
-                        </ul>
-                        <a href="#" class="subscribe-btn">Contact sales</a>
                     </div>
-                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
     </section>
