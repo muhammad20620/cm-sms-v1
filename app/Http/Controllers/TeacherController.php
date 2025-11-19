@@ -853,7 +853,7 @@ class TeacherController extends Controller
         $counter_condition = Chat::where('message_thrade', $id)->orderBy('id', 'desc')->first();
 
        
-       if($counter_condition->sender_id != auth()->user()->id){
+       if($counter_condition && $counter_condition->sender_id != auth()->user()->id){
             Chat::where('message_thrade', $id)->update(['read_status' => 1]);
         }
         

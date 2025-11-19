@@ -2,120 +2,393 @@
   font-size: 14px !important;
   font-weight: $fw_SemiBold !important;
   color: $eColor_Blueish !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  
   > :not(caption) > * > * {
-    padding: 11px 16px !important;
-    border-bottom-color: $table-light-bg !important;
+    padding: 14px 18px !important;
+    border-bottom: 1px solid rgba(227, 228, 234, 0.6) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    vertical-align: middle;
+    
     &:first-child {
       padding-left: 30px !important;
     }
+    
+    &:last-child {
+      padding-right: 30px !important;
+    }
   }
+  
+  thead {
+    background-color: #f8f9fa;
+    
+    > tr > th {
+      font-size: 13px !important;
+      font-weight: $fw_SemiBold !important;
+      color: $eColor_Blueish !important;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 16px 18px !important;
+      border-bottom: 2px solid $eColor_Seperate !important;
+      position: relative;
+      
+      &:first-child {
+        padding-left: 30px !important;
+      }
+      
+      &:last-child {
+        padding-right: 30px !important;
+      }
+    }
+  }
+  
   > :not(:first-child) {
-    border-top: 1px solid $table-light-bg;
+    border-top: 1px solid rgba(227, 228, 234, 0.4);
   }
+  
   &.table-borderless {
     > :not(:first-child) {
       border-top: none;
     }
+    
+    > :not(caption) > * > * {
+      border-bottom: none !important;
+    }
   }
+  
   .table-light {
     --bs-table-bg: $table-light-bg;
   }
+  
   tbody {
+    background-color: #fff;
+    
     tr {
-      font-size: 12px !important;
+      font-size: 13px !important;
       font-weight: $fw_Regular !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      
+      &:last-child > * {
+        border-bottom: none !important;
+      }
+      
       th {
-        font-size: 12px !important;
-        font-weight: $fw_Regular !important;
+        font-size: 13px !important;
+        font-weight: $fw_Medium !important;
+        color: $eColor_Blueish;
+      }
+      
+      td {
+        color: #4a5568;
+        font-size: 13px !important;
+        line-height: 1.6;
       }
     }
   }
-  &.table-hover > tbody > tr:hover > * {
-    background-color: $table-light-bg;
-    color: $eColor_Blueish;
+  
+  &.table-hover {
+    tbody > tr {
+      cursor: pointer;
+      
+      &:hover {
+        background-color: rgba(201, 34, 40, 0.04) !important;
+        transform: scale(1.001);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        
+        > * {
+          color: $eColor_Blueish !important;
+          border-color: rgba(201, 34, 40, 0.1) !important;
+        }
+      }
+      
+      &:active {
+        transform: scale(0.999);
+        background-color: rgba(201, 34, 40, 0.06) !important;
+      }
+    }
   }
+  
   &.table-dark {
-    --bs-table-bg: #181c32;
-    --bs-table-hover-bg: #181c3215;
-    --bs-table-hover-color: #181c32;
+    --bs-table-bg: #212529;
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-hover-color: #fff;
     color: #fff !important;
     border-color: #4c5067 !important;
+    
+    thead {
+      background-color: #1a1d29;
+      
+      > tr > th {
+        color: #fff !important;
+        border-bottom-color: #4c5067 !important;
+      }
+    }
+    
+    tbody {
+      background-color: #212529;
+      
+      tr {
+        td {
+          color: rgba(255, 255, 255, 0.85);
+        }
+      }
+    }
+    
     > :not(caption) > * > * {
-      border-bottom-color: #4c5067 !important;
+      border-bottom-color: rgba(76, 80, 103, 0.5) !important;
     }
-    &.table-hover > tbody > tr:hover > * {
-      background-color: #181c3290;
-      color: #fff;
+    
+    &.table-hover > tbody > tr:hover {
+      background-color: rgba(255, 255, 255, 0.08) !important;
+      
+      > * {
+        color: #fff !important;
+      }
     }
+    
     &.table-striped > tbody > tr:nth-of-type(odd) > * {
-      --bs-table-accent-bg: #181c3290 !important;
-      color: #fff;
+      background-color: rgba(255, 255, 255, 0.03) !important;
+      color: rgba(255, 255, 255, 0.9) !important;
     }
   }
-  &.table-striped > tbody > tr:nth-of-type(odd) > * {
-    background-color: $table-light-bg;
-    color: $eColor_Blueish;
+  
+  &.table-striped {
+    tbody > tr:nth-of-type(odd) > * {
+      background-color: rgba(227, 228, 234, 0.3);
+      color: $eColor_Blueish;
+    }
+    
+    tbody > tr:nth-of-type(even) > * {
+      background-color: #fff;
+    }
+  }
+  
+  // Sticky header support
+  &.table-sticky-header {
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+  }
+  
+  // Responsive improvements
+  @media screen and (max-width: 768px) {
+    > :not(caption) > * > * {
+      padding: 10px 12px !important;
+      font-size: 12px !important;
+      
+      &:first-child {
+        padding-left: 16px !important;
+      }
+      
+      &:last-child {
+        padding-right: 16px !important;
+      }
+    }
+    
+    thead > tr > th {
+      padding: 12px 12px !important;
+      font-size: 11px !important;
+      
+      &:first-child {
+        padding-left: 16px !important;
+      }
+      
+      &:last-child {
+        padding-right: 16px !important;
+      }
+    }
   }
 }
 
 // For Admin table
-.eTable-2 > :not(caption) > * > *:last-child {
-  width: 107px;
+.eTable-2 {
+  > :not(caption) > * > * {
+    padding: 16px 18px !important;
+    border-bottom: 1px dashed $eColor_Seperate !important;
+    transition: all 0.2s ease;
+    
+    &:first-child {
+      padding-left: 0px !important;
+    }
+    
+    &:last-child {
+      width: 107px;
+      padding-right: 0px !important;
+      text-align: right;
+    }
+  }
+  
+  > :not(:first-child) {
+    border-top: 1.2px solid $eColor_Seperate !important;
+  }
+  
+  thead {
+    tr {
+      th {
+        font-size: 13px;
+        font-weight: $fw_Medium;
+        color: $eColor_Blackish;
+        padding: 16px 18px !important;
+        border-bottom: 1.1px solid $eColor_Seperate !important;
+        background-color: #fafbfc;
+        
+        &:first-child {
+          padding-left: 0px !important;
+        }
+        
+        &:last-child {
+          padding-right: 0px !important;
+          text-align: right;
+        }
+      }
+    }
+  }
+  
+  tbody {
+    tr {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      &:not(:last-child) {
+        border-bottom: 1px dashed $eColor_Seperate;
+      }
+      
+      &:hover {
+        background-color: rgba(201, 34, 40, 0.02);
+        
+        > * {
+          color: $eColor_Blueish;
+        }
+      }
+      
+      &:last-child > * {
+        border-bottom-color: transparent !important;
+      }
+    }
+  }
+  
+  &.tbody-border {
+    thead {
+      tr {
+        th {
+          font-size: 16px;
+          font-weight: $fw_SemiBold;
+          color: $eColor_Blueish;
+        }
+      }
+    }
+    
+    tbody {
+      tr {
+        border-bottom: 1.1px solid $eColor_Seperate !important;
+        
+        &:first-child {
+          border-bottom: 1.1px solid transparent !important;
+        }
+      }
+    }
+  }
+  
+  @media screen and (max-width: 768px) {
+    > :not(caption) > * > * {
+      padding: 12px 14px !important;
+      font-size: 12px !important;
+    }
+    
+    thead tr th {
+      padding: 12px 14px !important;
+      font-size: 12px !important;
+    }
+  }
 }
 
 // Table btn
 .table-action-btn {
-  display: inline-block;
-  padding: 6px 10px;
-  line-height: 1;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  line-height: 1.2;
+  border-radius: 6px;
   background-color: $eColor_Whiteish;
   font-size: 12px;
-  font-weight: $fw_Regular;
+  font-weight: $fw_Medium;
   color: $eColor_Blueish;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  text-decoration: none;
+  
   &:hover {
-    color: $eColor_Blueish;
+    background-color: rgba(201, 34, 40, 0.08);
+    color: #c92228;
+    border-color: rgba(201, 34, 40, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(201, 34, 40, 0.15);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(201, 34, 40, 0.1);
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(201, 34, 40, 0.1);
   }
 }
+
 .table-action-btn-2 {
-  display: inline-block;
-  height: 35px;
-  padding: 8px 18px;
-  line-height: 1;
-  border: none;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 8px 20px;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background-color: #edf2f6;
   font-size: 14px;
   font-weight: $fw_Medium;
   color: $eColor_Blackish;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  
+  &:hover {
+    background-color: rgba(201, 34, 40, 0.08);
+    color: #c92228;
+    border-color: rgba(201, 34, 40, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(201, 34, 40, 0.15);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(201, 34, 40, 0.1);
+  }
+  
   ~ .eDropdown-menu-2 {
     li {
       a {
         font-size: 14px !important;
         font-weight: $fw_Medium;
         line-height: 30px;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          transform: translateX(2px);
+        }
       }
     }
   }
 }
 
-// Invoice Table
-.eTable-2.tbody-border {
-  thead {
-    tr {
-      th {
-        font-size: 16px;
-        font-weight: $fw_SemiBold;
-        color: $eColor_Blueish;
-      }
-    }
-  }
-  tbody {
-    tr {
-      border-bottom: 1.1px solid $eColor_Seperate !important;
-      &:first-child {
-        border-bottom: 1.1px solid transparent !important;
-      }
-    }
-  }
-}
