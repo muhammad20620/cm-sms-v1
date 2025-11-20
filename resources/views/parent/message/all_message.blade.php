@@ -241,6 +241,18 @@ $msg_user_lists = DB::table('users')
 </main>
 
 
+<!-- Pusher for Real-time Messaging -->
+<script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+<script>
+    // Set global variables for real-time messaging
+    window.currentUserId = {{ auth()->user()->id }};
+    window.currentThreadId = {{ $msg_user_details->thread_id }};
+    window.currentUserRole = '{{ auth()->user()->role }}';
+    window.pusherKey = '1ffd600355cbf525961b';
+    window.pusherCluster = 'us2';
+</script>
+<script src="{{ asset('assets/js/realtime-messages-pusher.js') }}"></script>
+
 <script>
 
 window.onload = function() {

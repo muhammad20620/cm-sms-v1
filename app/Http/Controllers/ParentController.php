@@ -40,6 +40,7 @@ use App\Models\Chat;
 use App\Models\PaymentMethods;
 
 use Illuminate\Foundation\Auth\User as AuthUser;
+use App\Events\MessageSent;
 use PhpParser\Builder\Class_;
 
 class ParentController extends Controller
@@ -820,8 +821,16 @@ class ParentController extends Controller
 
         ];
     
-        // Create feedback entry
-        Chat::create($chat_data);
+        // Create chat entry
+        $chat = Chat::create($chat_data);
+        
+        // Load relationships
+        $chat->load('sender', 'receiver');
+        $sender = User::find(auth()->user()->id);
+        $receiver = User::find($data['reciver_id']);
+        
+        // Broadcast the message event
+        broadcast(new MessageSent($chat, $sender, $receiver))->toOthers();
 
         return redirect()->back();
     }

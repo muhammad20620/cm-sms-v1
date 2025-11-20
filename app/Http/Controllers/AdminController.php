@@ -50,6 +50,7 @@ use Mail;
 use App\Mail\FreeEmail;
 use App\Mail\StudentsEmail;
 use App\Mail\NewUserEmail;
+use App\Events\MessageSent;
 
 use PDF;
 
@@ -4682,8 +4683,16 @@ class AdminController extends Controller
 
         ];
 
-        // Create feedback entry
-        Chat::create($chat_data);
+        // Create chat entry
+        $chat = Chat::create($chat_data);
+        
+        // Load relationships
+        $chat->load('sender', 'receiver');
+        $sender = User::find(auth()->user()->id);
+        $receiver = User::find($data['reciver_id']);
+        
+        // Broadcast the message event
+        broadcast(new MessageSent($chat, $sender, $receiver))->toOthers();
 
         return redirect()->back();
     }
