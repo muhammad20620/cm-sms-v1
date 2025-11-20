@@ -3,11 +3,13 @@
 /public/build
 /public/hot
 /public/storage
+/public/mix-manifest.json
 /storage/*.key
 /vendor
 .env
 .env.backup
 .env.production
+.env.testing
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
@@ -21,3 +23,36 @@ yarn-error.log
 /storage/logs/*
 /storage/framework/*
 /bootstrap/cache/*
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Coverage reports
+/coverage
+
+# Generated CSV files (root level reports)
+/*.csv

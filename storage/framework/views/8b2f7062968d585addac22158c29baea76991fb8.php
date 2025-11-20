@@ -1,1 +1,0 @@
-<?php /**PATH /Applications/XAMPP/xamppfiles/htdocs/cm-sms-v1/resources/views/external_plugin.blade.php ENDPATH**/ ?>
