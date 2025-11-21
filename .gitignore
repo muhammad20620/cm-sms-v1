@@ -21,8 +21,17 @@ yarn-error.log
 /.vscode
 
 /storage/logs/*
+!/storage/logs/.gitignore
 /storage/framework/*
+!/storage/framework/.gitignore
+!/storage/framework/sessions/.gitignore
+!/storage/framework/cache/.gitignore
+!/storage/framework/views/.gitignore
+/storage/app/*
+!/storage/app/.gitignore
+!/storage/app/public/.gitignore
 /bootstrap/cache/*
+!/bootstrap/cache/.gitignore
 
 # OS Files
 .DS_Store
