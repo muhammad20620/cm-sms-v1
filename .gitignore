@@ -65,3 +65,5 @@ Thumbs.db
 
 # Generated CSV files (root level reports)
 /*.csv
+
+server.php
