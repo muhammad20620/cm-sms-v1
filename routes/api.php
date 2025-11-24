@@ -22,6 +22,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/login', [ApiController::class, 'login']);
 
 Route::group(['middleware', ['auth:sanctum']], function () {
+
+
+
+    
     Route::post('/user_details', [ApiController::class, 'userDetails']);
     Route::post('/routine', [ApiController::class, 'routine']);
     Route::post('/attendance', [ApiController::class, 'attendanceReport']);
