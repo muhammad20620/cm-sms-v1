@@ -41,4 +41,7 @@ Route::group(['middleware', ['auth:sanctum']], function () {
     Route::post('/logout', [ApiController::class, 'logout']);
     Route::post('/account_delete', [ApiController::class, 'account_delete']);
     Route::post('/change_profile_photo', [ApiController::class, 'change_profile_photo']);
+
+
+    
 });
