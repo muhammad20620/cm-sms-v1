@@ -67,3 +67,6 @@ Thumbs.db
 /*.csv
 
 server.php
+
+.DS_Store
+**/.DS_Store

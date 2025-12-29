@@ -25,7 +25,7 @@
             <div class="middle-elem">
                 <div class="primary-form">
                     <div class="form-logo mb-5">
-                        <img height="60px" src="{{ asset('assets/uploads/logo/'.get_settings('dark_logo')) }}">
+                        <img height="60px" src="{{ get_logo_url('dark_logo') }}">
                     </div>
                     <div class="row">
                         <div class="col-12">

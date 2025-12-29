@@ -8,7 +8,6 @@ use App\Models\Book;
 use App\Models\BookIssue;
 use App\Models\Session;
 use App\Models\Classes;
-use App\Models\user;
 use App\Models\Noticeboard;
 use App\Models\FrontendEvent;
 use App\Models\MessageThrade;

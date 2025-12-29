@@ -11,7 +11,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- all the css files -->
-    <link rel="shortcut icon" href="{{ asset('assets/uploads/logo/'.get_settings('favicon')) }}" />
+    <link rel="shortcut icon" href="{{ get_logo_url('favicon') }}" />
     <!-- Bootstrap CSS -->
     <link
       rel="stylesheet"
@@ -63,7 +63,7 @@
 	<div class="sidebar">
 		<div class="logo-details mt-4 mb-3">
       <div class="img_wrapper">
-          <img height="40px" class="" src="{{ asset('assets/uploads/logo/'.get_settings('white_logo')) }}" alt="" />
+          <img height="40px" class="" src="{{ get_logo_url('white_logo') }}" alt="" />
       </div>
       {{-- <span class="logo_name">{{ get_settings('navbar_title') }}</span> --}}
     </div>

@@ -9,7 +9,6 @@ use App\Models\Session;
 use App\Models\ExpenseCategory;
 use App\Models\Expense;
 use App\Models\Enrollment;
-use App\Models\user;
 use App\Models\Noticeboard;
 use App\Models\FrontendEvent;
 use App\Models\MessageThrade;

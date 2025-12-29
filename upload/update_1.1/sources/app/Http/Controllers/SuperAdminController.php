@@ -717,6 +717,7 @@ class SuperAdminController extends Controller
 
     //logo update
     function update_logo(Request $request){
+        dd('test');
         $dark_logo = time().'1.png';
         $light_logo = time().'2.png';
         $favicon = time().'3.png';

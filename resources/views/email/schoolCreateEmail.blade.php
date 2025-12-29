@@ -19,7 +19,7 @@
                                  <!-- Logo -->
                                 <div class="header_logo" style="display: flex; align-items: center; " >
                                     <div class="logo" >
-                                        <a href="#"><img src="{{ asset('assets/uploads/logo/'.get_settings('front_logo')) }}" class="mx-4 my-5" width="200px"
+                                        <a href="#"><img src="{{ get_logo_url('front_logo') }}" class="mx-4 my-5" width="200px"
                                             alt="..."></a> 
                     
                                     </div>

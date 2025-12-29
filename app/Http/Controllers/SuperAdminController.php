@@ -47,6 +47,8 @@ use  Omnipay\Omnipay;
 use Illuminate\Support\Str;
 use Razorpay\Api\Api;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Stripe, DB;
 use PaytmWallet;
 use File;
@@ -1044,26 +1046,52 @@ class SuperAdminController extends Controller
 
     //logo update
     function update_logo(Request $request){
-        $dark_logo = time().'1.png';
-        $light_logo = time().'2.png';
-        $favicon = time().'3.png';
-        $white_logo = time().'4.png';
+        $request->validate([
+            'dark_logo'  => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:4096'],
+            'light_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:4096'],
+            'white_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:4096'],
+            'favicon'    => ['nullable', 'file', 'mimes:png,jpg,jpeg,ico,svg', 'max:2048'],
+        ]);
 
-        if(!empty($request->dark_logo)){
-            $request->dark_logo->move(public_path('assets/uploads/logo/'), $dark_logo);
-            GlobalSettings::where('key', 'dark_logo')->update(['value' => $dark_logo]);
-        }
-        if(!empty($request->light_logo)){
-            $request->light_logo->move(public_path('assets/uploads/logo/'), $light_logo);
-            GlobalSettings::where('key', 'light_logo')->update(['value' => $light_logo]);
-        }
-        if(!empty($request->favicon)){
-            $request->favicon->move(public_path('assets/uploads/logo/'), $favicon);
-            GlobalSettings::where('key', 'favicon')->update(['value' => $favicon]);
-        }
-        if(!empty($request->white_logo)){
-            $request->white_logo->move(public_path('assets/uploads/logo/'), $white_logo);
-            GlobalSettings::where('key', 'white_logo')->update(['value' => $white_logo]);
+        $disk = Storage::disk('public'); // storage/app/public (served via /public/storage)
+        $dir = 'assets/uploads/logo';
+        $disk->makeDirectory($dir);
+
+        $map = [
+            'dark_logo' => 'dark_logo',
+            'light_logo' => 'light_logo',
+            'white_logo' => 'white_logo',
+            'favicon' => 'favicon',
+        ];
+
+        foreach ($map as $input => $key) {
+            if (!$request->hasFile($input)) {
+                continue;
+            }
+
+            $file = $request->file($input);
+            $ext = strtolower($file->getClientOriginalExtension() ?: 'png');
+            $filename = sprintf('%s-%s.%s', $key, now()->format('YmdHis') . '-' . Str::random(6), $ext);
+            $path = $dir . '/' . $filename;
+
+            try {
+                $previous = (string) GlobalSettings::where('key', $key)->value('value');
+
+                // Delete previous storage file (only if it was stored with a relative path)
+                if ($previous !== '' && Str::contains($previous, '/') && $disk->exists($previous)) {
+                    $disk->delete($previous);
+                }
+
+                $storedPath = $file->storeAs($dir, $filename, 'public');
+                GlobalSettings::where('key', $key)->update(['value' => $storedPath]);
+            } catch (\Throwable $e) {
+                Log::error('Failed to upload logo', [
+                    'setting_key' => $key,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect('superadmin/settings/system')->with('error', 'Failed to upload logo. Please ensure `php artisan storage:link` has been run and storage is writable.');
+            }
         }
 
         return redirect('superadmin/settings/system')->with('message', "Logo updated successfully");

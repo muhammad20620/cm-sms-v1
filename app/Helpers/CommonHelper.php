@@ -2,6 +2,8 @@
 use App\Models\PaymentMethods;
 use App\Models\GlobalSettings;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 //All common helper functions
 if (! function_exists('get_user_image')) {
     function get_user_image($file_name_or_user_id = '') {
@@ -194,6 +196,51 @@ if (!function_exists('get_settings')) {
         }
 
         return $global_settings;
+    }
+}
+
+// Global Settings Media URL helper (logos, favicons, etc.)
+if (!function_exists('get_settings_media_url')) {
+    function get_settings_media_url(string $key, string $publicDir, ?string $defaultFile = null): string
+    {
+        $value = (string) get_settings($key);
+
+        if ($value === '') {
+            return $defaultFile ? asset(trim($publicDir, '/') . '/' . ltrim($defaultFile, '/')) : '';
+        }
+
+        // Absolute URLs stored as-is
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        $publicDir = trim($publicDir, '/');
+
+        // If value already looks like a relative path, prefer Storage public disk
+        if (Str::contains($value, '/')) {
+            return url(Storage::disk('public')->url(ltrim($value, '/')));
+        }
+
+        // Backward compatibility: old installs stored only filename under public/assets/uploads/...
+        $legacyPublicPath = public_path($publicDir . '/' . $value);
+        if (file_exists($legacyPublicPath) && is_file($legacyPublicPath)) {
+            return asset($publicDir . '/' . $value);
+        }
+
+        // New storage location but old DB format (filename only)
+        $storagePath = $publicDir . '/' . $value;
+        if (Storage::disk('public')->exists($storagePath)) {
+            return url(Storage::disk('public')->url($storagePath));
+        }
+
+        return $defaultFile ? asset($publicDir . '/' . ltrim($defaultFile, '/')) : asset($publicDir . '/');
+    }
+}
+
+if (!function_exists('get_logo_url')) {
+    function get_logo_url(string $key, ?string $defaultFile = 'thumbnail.png'): string
+    {
+        return get_settings_media_url($key, 'assets/uploads/logo', $defaultFile);
     }
 }
 

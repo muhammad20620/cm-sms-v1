@@ -22,7 +22,7 @@
                 <div class="col-lg-2 col-md-6 col-sm-6 col-5">
                     <!-- Logo  -->
                     <div class="logo">
-                        <a href="#"><img src="{{ asset('assets/uploads/logo/' . get_settings('front_logo')) }}"
+                        <a href="#"><img src="{{ get_logo_url('front_logo') }}"
                                 alt="..."></a>
                     </div>
                 </div>
@@ -452,7 +452,7 @@
                         <div class="footer-items">
                             <div class="footer-logo">
                                 <a href="#"><img
-                                        src="{{ asset('assets/uploads/logo/' . get_settings('light_logo')) }}"
+                                        src="{{ get_logo_url('light_logo') }}"
                                         alt="image"></a>
                             </div>
                             <p>{{ get_settings('frontend_footer_text') }}</p>

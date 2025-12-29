@@ -10,7 +10,7 @@
   <meta content="" name="description" />
   <meta content="" name="author" />
   <!-- all the css files -->
-  <link rel="shortcut icon" href="{{ asset('assets/uploads/logo/'.get_settings('favicon')) }}" />
+  <link rel="shortcut icon" href="{{ get_logo_url('favicon') }}" />
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" type="text/css" href="{{ asset('assets/vendors/bootstrap-5.1.3/css/bootstrap.min.css') }}">
 

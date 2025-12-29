@@ -204,7 +204,7 @@
                                 <div class="col-md-3 text-center">
                                     <label class="col-form-label" for="example-fileinput">{{ get_phrase('Frontend logo') }}</label>
                                     <div class="eCard d-block text-center bg-light">
-                                        <img src="{{ asset('assets/uploads/logo/'.get_settings('front_logo')) }}" class="mx-4 my-5" width="200px"
+                                        <img src="{{ get_logo_url('front_logo') }}" class="mx-4 my-5" width="200px"
                                             alt="...">
                                         <div class="eCard-body">
                                             <input class="form-control eForm-control-file" id="formFileSm" type="file" name="front_logo">
