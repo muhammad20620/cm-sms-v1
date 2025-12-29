@@ -134,7 +134,7 @@ use App\Models\School;
 		                			<td>
 		                				{{ $subscription->payment_method }}
 		                				@if($subscription->payment_method == 'Offline')
-		                				<a href="{{ asset('assets/uploads/offline_payment/'.$offline_tr_keys->document_file) }}" class="btn btn-light-success py-1 px-2 text-14px mt-1" data-bs-toggle="tooltip" title="Document file"><i class="bi bi-file-earmark-richtext-fill"></i></a>
+		                				<a href="{{ get_upload_url('assets/uploads/offline_payment', $offline_tr_keys->document_file) }}" class="btn btn-light-success py-1 px-2 text-14px mt-1" data-bs-toggle="tooltip" title="Document file"><i class="bi bi-file-earmark-richtext-fill"></i></a>
 		                				@endif
 		                			</td>
 		                			<td>{{ date('d-M-Y', $subscription->date_added) }}</td>

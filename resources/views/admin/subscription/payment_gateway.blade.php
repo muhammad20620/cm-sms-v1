@@ -268,12 +268,12 @@ $subscription = Subscription::latest()->first();
                                     @if(in_array(strtolower($fileExtension), $allowedExtensions))
                                         {{-- File has a valid extension --}}
                                         <span class="badge bg-success m-1">
-                                            <a href="{{ asset('assets/uploads/offline_payment/'.get_settings('off_pay_ins_file')) }}" download><img src="{{ asset('assets/uploads/offline_payment/'.get_settings('off_pay_ins_file')) }}" width="539px" ></a>
+                                            <a href="{{ get_upload_url('assets/uploads/offline_payment', get_settings('off_pay_ins_file')) }}" download><img src="{{ get_upload_url('assets/uploads/offline_payment', get_settings('off_pay_ins_file')) }}" width="539px" ></a>
                                         </span>
                                         
                                     @else
                                     <span class="badge bg-success m-1">
-                                        <a style="color:#fff; font-size: 14px;" href="{{ asset('assets/uploads/offline_payment/'.get_settings('off_pay_ins_file')) }}" download>Download the instruction <i class="bi bi-file-earmark-richtext-fill"></i></a>
+                                        <a style="color:#fff; font-size: 14px;" href="{{ get_upload_url('assets/uploads/offline_payment', get_settings('off_pay_ins_file')) }}" download>Download the instruction <i class="bi bi-file-earmark-richtext-fill"></i></a>
                                     </span>
                                     @endif
                                 @endif

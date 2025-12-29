@@ -198,7 +198,7 @@ class AdminController extends Controller
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -251,10 +251,13 @@ class AdminController extends Controller
         $data = $request->all();
 
         if (!empty($data['photo'])) {
+            $user_information = User::where('id', $id)->value('user_information');
+            $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            delete_upload_file('assets/uploads/user-images', $old_photo);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -380,7 +383,7 @@ class AdminController extends Controller
         // Get the current user
         $user = User::find($id);
 
-        $filePath = $file->move(public_path('assets/uploads/user-docs/' . $user->id . '/'), $fileName);
+                $filePath = $file->storeAs('assets/uploads/user-docs/' . $user->id, $fileName, 'public');
 
         // Get existing documents or initialize as an empty array
         $documents = $user->documents ? json_decode($user->documents, true) : [];
@@ -405,7 +408,7 @@ class AdminController extends Controller
 
             // Check if the file with the given file_name exists
             if (isset($documents[$file_name])) {
-                $file_path = public_path('assets/uploads/user-docs/' . $user->id . '/' . $documents[$file_name]);
+                $file_path = storage_path('app/public/assets/uploads/user-docs/' . $user->id . '/' . $documents[$file_name]);
 
                 // Check if the file exists
                 if (file_exists($file_path)) {
@@ -476,7 +479,7 @@ class AdminController extends Controller
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -529,10 +532,13 @@ class AdminController extends Controller
         $data = $request->all();
 
         if (!empty($data['photo'])) {
+            $user_information = User::where('id', $id)->value('user_information');
+            $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            delete_upload_file('assets/uploads/user-images', $old_photo);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -617,7 +623,7 @@ class AdminController extends Controller
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -666,10 +672,13 @@ class AdminController extends Controller
         $data = $request->all();
 
         if (!empty($data['photo'])) {
+            $user_information = User::where('id', $id)->value('user_information');
+            $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            delete_upload_file('assets/uploads/user-images', $old_photo);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -755,7 +764,7 @@ class AdminController extends Controller
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -805,10 +814,13 @@ class AdminController extends Controller
         $data = $request->all();
 
         if (!empty($data['photo'])) {
+            $user_information = User::where('id', $id)->value('user_information');
+            $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            delete_upload_file('assets/uploads/user-images', $old_photo);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -896,7 +908,7 @@ class AdminController extends Controller
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -975,10 +987,13 @@ class AdminController extends Controller
 
 
         if (!empty($data['photo'])) {
+            $user_information = User::where('id', $id)->value('user_information');
+            $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            delete_upload_file('assets/uploads/user-images', $old_photo);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -1093,7 +1108,7 @@ class AdminController extends Controller
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -1155,10 +1170,13 @@ class AdminController extends Controller
     {
         $data = $request->all();
         if (!empty($data['photo'])) {
+            $user_information = User::where('id', $id)->value('user_information');
+            $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
             $imageName = time() . '.' . $data['photo']->extension();
 
-            $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+            delete_upload_file('assets/uploads/user-images', $old_photo);
+            $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
             $photo  = $imageName;
         } else {
@@ -1325,7 +1343,7 @@ class AdminController extends Controller
 
                 $imageName = time() . '.' . $data['photo']->extension();
 
-                $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+                $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
                 $photo  = $imageName;
             } else {
@@ -2078,7 +2096,7 @@ class AdminController extends Controller
             $filename = $file->getClientOriginalName();
             $extension = $file->getClientOriginalExtension(); //Get extension of uploaded file
 
-            $file->move(public_path('assets/uploads/syllabus/'), $filename);
+            $file->storeAs('assets/uploads/syllabus', $filename, 'public');
 
             $filepath = asset('assets/uploads/syllabus/' . $filename);
         }
@@ -2115,7 +2133,7 @@ class AdminController extends Controller
             $filename = $file->getClientOriginalName();
             $extension = $file->getClientOriginalExtension(); //Get extension of uploaded file
 
-            $file->move(public_path('assets/uploads/syllabus/'), $filename);
+            $file->storeAs('assets/uploads/syllabus', $filename, 'public');
 
             $filepath = asset('assets/uploads/syllabus/' . $filename);
         }
@@ -3484,10 +3502,12 @@ class AdminController extends Controller
         $data['session_id'] = $active_session;
 
         if (!empty($data['image'])) {
+            $old_image = (string) Noticeboard::where('id', $id)->value('image');
 
             $imageName = time() . '.' . $data['image']->extension();
 
-            $data['image']->move(public_path('assets/uploads/noticeboard/'), $imageName);
+            delete_upload_file('assets/uploads/noticeboard', $old_image);
+            $data['image']->storeAs('assets/uploads/noticeboard', $imageName, 'public');
 
             $data['image']  = $imageName;
         }
@@ -3517,7 +3537,7 @@ class AdminController extends Controller
 
             $imageName = time() . '.' . $data['image']->extension();
 
-            $data['image']->move(public_path('assets/uploads/noticeboard/'), $imageName);
+            $data['image']->storeAs('assets/uploads/noticeboard', $imageName, 'public');
 
             $data['image']  = $imageName;
         }
@@ -3532,6 +3552,9 @@ class AdminController extends Controller
     public function noticeboardDelete($id = '')
     {
         $notice = Noticeboard::find($id);
+        if ($notice) {
+            delete_upload_file('assets/uploads/noticeboard', $notice->image);
+        }
         $notice->delete();
         return redirect()->back()->with('message', 'You have successfully delete a notice.');
     }
@@ -3694,7 +3717,8 @@ class AdminController extends Controller
 
             $ext = $request->school_logoo->getClientOriginalExtension();
             $newFileName = random(8) . '.' . $ext;
-            $request->school_logoo->move(public_path() . '/assets/uploads/school_logo', $newFileName); // This will save file in a folder.  
+            delete_upload_file('assets/uploads/school_logo', $old_image);
+            $request->school_logoo->storeAs('assets/uploads/school_logo', $newFileName, 'public');
             $school_data->school_logo = $newFileName;
             $school_data->save();
         }
@@ -3705,7 +3729,8 @@ class AdminController extends Controller
 
             $ext = $request->email_logo->getClientOriginalExtension();
             $newFileName = random(8) . '.' . $ext;
-            $request->email_logo->move(public_path() . '/assets/uploads/school_logo', $newFileName); // This will save file in a folder.  
+            delete_upload_file('assets/uploads/school_logo', $old_image);
+            $request->email_logo->storeAs('assets/uploads/school_logo', $newFileName, 'public');
             $school_data->email_logo = $newFileName;
             $school_data->save();
         }
@@ -3715,7 +3740,8 @@ class AdminController extends Controller
 
             $ext = $request->socialLogo1->getClientOriginalExtension();
             $newFileName = random(8) . '.' . $ext;
-            $request->socialLogo1->move(public_path() . '/assets/uploads/school_logo', $newFileName); // This will save file in a folder.  
+            delete_upload_file('assets/uploads/school_logo', $old_image);
+            $request->socialLogo1->storeAs('assets/uploads/school_logo', $newFileName, 'public');
             $school_data->socialLogo1 = $newFileName;
             $school_data->save();
         }
@@ -3725,7 +3751,8 @@ class AdminController extends Controller
 
             $ext = $request->socialLogo2->getClientOriginalExtension();
             $newFileName = random(8) . '.' . $ext;
-            $request->socialLogo2->move(public_path() . '/assets/uploads/school_logo', $newFileName); // This will save file in a folder.  
+            delete_upload_file('assets/uploads/school_logo', $old_image);
+            $request->socialLogo2->storeAs('assets/uploads/school_logo', $newFileName, 'public');
             $school_data->socialLogo2 = $newFileName;
             $school_data->save();
         }
@@ -3735,7 +3762,8 @@ class AdminController extends Controller
 
             $ext = $request->socialLogo3->getClientOriginalExtension();
             $newFileName = random(8) . '.' . $ext;
-            $request->socialLogo3->move(public_path() . '/assets/uploads/school_logo', $newFileName); // This will save file in a folder.  
+            delete_upload_file('assets/uploads/school_logo', $old_image);
+            $request->socialLogo3->storeAs('assets/uploads/school_logo', $newFileName, 'public');
             $school_data->socialLogo3 = $newFileName;
             $school_data->save();
         }
@@ -3936,7 +3964,8 @@ class AdminController extends Controller
 
                 $ext = $request->off_pay_ins_file->getClientOriginalExtension();
                 $newFileName = random(8) . '.' . $ext;
-                $request->off_pay_ins_file->move(public_path() . '/assets/uploads/offline_payment/', $newFileName); // This will save file in a folder.  
+                delete_upload_file('assets/uploads/offline_payment', $old_image);
+                $request->off_pay_ins_file->storeAs('assets/uploads/offline_payment', $newFileName, 'public');
                 $school_data->off_pay_ins_file = $newFileName;
                 $school_data->save();
             }
@@ -4244,7 +4273,7 @@ class AdminController extends Controller
                 $extension = $file->getClientOriginalExtension(); //Get extension of uploaded file
 
 
-                $file->move(public_path('assets/uploads/offline_payment'), $filename);
+                $file->storeAs('assets/uploads/offline_payment', $filename, 'public');
                 $data['document_image'] = $filename;
             } else {
                 $data['document_image'] = '';
@@ -4285,7 +4314,7 @@ class AdminController extends Controller
                 $extension = $file->getClientOriginalExtension(); //Get extension of uploaded file
 
 
-                $file->move(public_path('assets/uploads/offline_payment'), $filename);
+                $file->storeAs('assets/uploads/offline_payment', $filename, 'public');
                 $data['document_image'] = $filename;
             } else {
                 $data['document_image'] = '';
@@ -4332,10 +4361,12 @@ class AdminController extends Controller
         if (empty($request->photo)) {
             $user_info['photo'] = $request->old_photo;
         } else {
+            delete_upload_file('assets/uploads/user-images', $request->old_photo);
+
             $file_name = random(10) . '.png';
             $user_info['photo'] = $file_name;
 
-            $request->photo->move(public_path('assets/uploads/user-images/'), $file_name);
+            $request->photo->storeAs('assets/uploads/user-images', $file_name, 'public');
         }
 
         $data['user_information'] = json_encode($user_info);

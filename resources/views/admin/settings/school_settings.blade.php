@@ -75,7 +75,7 @@
                                     <div class="col-md-4 text-center ">
                                         <label class="eForm-label" for="school_logo">{{ get_phrase('school Logo') }}</label>
                                         <div class="eCard d-block text-center bg-light">
-                                            <img src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo') ) }}" class="mx-4 my-5" width="80px" height="80px"
+                                            <img src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo')) }}" class="mx-4 my-5" width="80px" height="80px"
                                                 alt="...">
                                             <div class="eCard-body">
                                                 <input class="form-control eForm-control-file" type="file" id="school_logo" name="school_logoo" accept="image/*">
@@ -86,7 +86,7 @@
                                     <div class="col-md-4 text-center">
                                         <label class="eForm-label" for="socialLogo2">{{ get_phrase('Social Logo-1') }}</label>
                                         <div class="eCard d-block text-center bg-light">
-                                            <img src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo1') ) }}" class="mx-4 my-5" width="80px" height="80px"
+                                            <img src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo1')) }}" class="mx-4 my-5" width="80px" height="80px"
                                                 alt="...">
                                             <div class="eCard-body">
                                                 <input class="form-control eForm-control-file" type="file" id="socialLogo1" name="socialLogo1" accept="image/*">
@@ -97,7 +97,7 @@
                                     <div class="col-md-4 text-center">
                                         <label class="eForm-label" for="socialLogo2">{{ get_phrase('Social Logo-2') }}</label>
                                         <div class="eCard d-block text-center bg-light">
-                                            <img src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo2') ) }}" class="mx-4 my-5" width="80px" height="80px"
+                                            <img src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo2')) }}" class="mx-4 my-5" width="80px" height="80px"
                                                 alt="...">
                                             <div class="eCard-body">
                                                 <input class="form-control eForm-control-file" type="file" id="socialLogo2" name="socialLogo2" accept="image/*">
@@ -108,7 +108,7 @@
                                     <div class="col-md-4 text-center">
                                         <label class="eForm-label" for="socialLogo3">{{ get_phrase('Social Logo-3') }}</label>
                                         <div class="eCard d-block text-center bg-light">
-                                            <img src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo3') ) }}" class="mx-4 my-5" width="80px" height="80px"
+                                            <img src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo3')) }}" class="mx-4 my-5" width="80px" height="80px"
                                                 alt="...">
                                             <div class="eCard-body">
                                                 <input class="form-control eForm-control-file" type="file" id="socialLogo3" name="socialLogo3" accept="image/*">
@@ -119,7 +119,7 @@
                                     <div class="col-md-4 text-center">
                                         <label class="eForm-label" for="email_logo">{{ get_phrase('Email template Logo') }}</label>
                                         <div class="eCard d-block text-center bg-light">
-                                            <img src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('email_logo') ) }}" class="mx-4 my-5" width="80px" height="80px"
+                                            <img src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('email_logo')) }}" class="mx-4 my-5" width="80px" height="80px"
                                                 alt="...">
                                             <div class="eCard-body">
                                                 <input class="form-control eForm-control-file" type="file" id="email_logo" name="email_logo" accept="image/*">

@@ -55,18 +55,18 @@
 
         // Get user image URL
         function getUserImage(userInfo) {
-            if (!userInfo) return '/assets/uploads/user-images/thumbnail.png';
+            if (!userInfo) return '/storage/assets/uploads/user-images/thumbnail.png';
             
             try {
                 const info = typeof userInfo === 'string' ? JSON.parse(userInfo) : userInfo;
                 if (info.photo) {
-                    return '/assets/uploads/user-images/' + info.photo;
+                    return '/storage/assets/uploads/user-images/' + info.photo;
                 }
             } catch (e) {
                 console.error('Error parsing user information:', e);
             }
             
-            return '/assets/uploads/user-images/thumbnail.png';
+            return '/storage/assets/uploads/user-images/thumbnail.png';
         }
 
         // Create message HTML element

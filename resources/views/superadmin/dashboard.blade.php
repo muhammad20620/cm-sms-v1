@@ -123,7 +123,7 @@ $month_wise_payment = $month_wise_payment_for_json;
 				<!-- Upcoming Events -->
 				<div class="col-md-7">
                     <div class="card bg-info">
-                        <h6 class="ms-4 mt-4 mb-5 text-white">{{ get_phrase('Subscription Payment') }}</h6>
+                        <h6 class="ms-4 mt-4 mb-5 text-danger">{{ get_phrase('Subscription Payment') }}</h6>
                         <div id="chartdiv" class="chartdiv"></div>
                     </div>
 				</div>

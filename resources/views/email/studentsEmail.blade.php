@@ -33,7 +33,7 @@ use App\Models\User;
                                  <!-- Logo -->
                                 <div class="header_logo" style="display: flex; align-items: center; " >
                                     <div class="logo" >
-                                        <a  href="#"><img style="margin-right: 350px;" src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('email_logo') ) }}" alt="logo image" width="80px"></a>
+                                        <a  href="#"><img style="margin-right: 350px;" src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('email_logo')) }}" alt="logo image" width="80px"></a>
                     
                                     </div>
                                     <p style="font-size: 15px; font-weight: 500; color: #7B7F84;">{{ date('Y-m-d') }}</p>
@@ -98,11 +98,11 @@ use App\Models\User;
                 <tr>
                     <td style="text-align:center; padding-bottom: 10px;"> 
                         <p style="text-align: center; font-size: 12px; color: #8D9197; font-weight: 400; margin-bottom: 30px;">{{ $school_details->warning_text }} </p>                               
-                        <a href="{{ $school_details->socialLink1 }}" style="width:50px; height:50px; text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo1') ) }}" width="20px" height="20px"></a>  
+                        <a href="{{ $school_details->socialLink1 }}" style="width:50px; height:50px; text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo1')) }}" width="20px" height="20px"></a>  
                           
-                        <a href="{{ $school_details->socialLink2 }}" style=" text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo2') ) }}" width="20px" height="20px"></a>   
+                        <a href="{{ $school_details->socialLink2 }}" style=" text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo2')) }}" width="20px" height="20px"></a>   
 
-                        <a href="{{ $school_details->socialLink3 }}" style=" text-decoration: none;"><img alt="Logo" src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo3') ) }}" width="20px" height="20px"></a>     
+                        <a href="{{ $school_details->socialLink3 }}" style=" text-decoration: none;"><img alt="Logo" src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('socialLogo3')) }}" width="20px" height="20px"></a>     
                     </td>
                 </tr>
                 <tr>

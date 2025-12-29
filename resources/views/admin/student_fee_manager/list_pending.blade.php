@@ -52,7 +52,7 @@ use App\Http\Controllers\CommonController;
 
                         </small>
                     </td>
-                     <td> <a href="{{ asset('assets/uploads/offline_payment/'.$invoice['document_image']) }}" download> {{ $invoice['document_image'] }} </a></td>
+                     <td> <a href="{{ get_upload_url('assets/uploads/offline_payment', $invoice['document_image']) }}" download> {{ $invoice['document_image'] }} </a></td>
                     <td>
                         <?php if (strtolower($invoice['status']) == 'unpaid'): ?>
                             <span class="eBadge ebg-success">{{ ucfirst($invoice['status']) }}</span>

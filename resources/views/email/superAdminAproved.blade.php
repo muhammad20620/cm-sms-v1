@@ -30,7 +30,7 @@ use App\Models\Subscription;
                                  <!-- Logo -->
                                 <div class="header_logo" style="display: flex; align-items: center; " >
                                     <div class="logo" >
-                                        <a  href="#"><img style="margin-right: 350px;" src="{{ asset('assets/uploads/email_logo/'.get_settings('email_logo')) }}" alt="logo image" width="150px"></a>
+                                        <a  href="#"><img style="margin-right: 350px;" src="{{ get_upload_url('assets/uploads/email_logo', get_settings('email_logo')) }}" alt="logo image" width="150px"></a>
                                     </div>
                                     <p style="font-size: 15px; font-weight: 500; color: #7B7F84;">{{ date('Y-m-d') }}</p>
                                 </div>
@@ -109,9 +109,9 @@ use App\Models\Subscription;
                 <tr>
                     <td style="text-align:center; padding-bottom: 10px;"> 
                         <p style="text-align: center; font-size: 12px; color: #8D9197; font-weight: 400; margin-bottom: 30px;">{{ get_settings('warning_text') }} </p>                               
-                        <a href="{{ get_settings('linkedin_link') }}" style="width:50px; height:50px; text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ asset('assets/uploads/email_logo/'.get_settings('socialLogo1')) }}" width="20px" height="20px"></a>    
-                        <a href="{{ get_settings('instagram_link') }}" style=" text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ asset('assets/uploads/email_logo/'.get_settings('socialLogo2')) }}" width="20px" height="20px"></a>   
-                        <a href="{{ get_settings('twitter_link') }}" style=" text-decoration: none;"><img alt="Logo" src="{{ asset('assets/uploads/email_logo/'.get_settings('socialLogo3')) }}" width="20px" height="20px"></a>                                                  
+                        <a href="{{ get_settings('linkedin_link') }}" style="width:50px; height:50px; text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ get_upload_url('assets/uploads/email_logo', get_settings('socialLogo1')) }}" width="20px" height="20px"></a>    
+                        <a href="{{ get_settings('instagram_link') }}" style=" text-decoration: none; margin-right:40px"><img alt="Logo" src="{{ get_upload_url('assets/uploads/email_logo', get_settings('socialLogo2')) }}" width="20px" height="20px"></a>   
+                        <a href="{{ get_settings('twitter_link') }}" style=" text-decoration: none;"><img alt="Logo" src="{{ get_upload_url('assets/uploads/email_logo', get_settings('socialLogo3')) }}" width="20px" height="20px"></a>                                                  
                     </td>
                 </tr>
                 <tr>

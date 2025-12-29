@@ -15,7 +15,7 @@ use App\Http\Controllers\CommonController;
 <style>
     .admit-card::before {
         content: "";
-        background: url('{{  asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo') ) }}') no-repeat center;
+        background: url('{{  get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo')) }}') no-repeat center;
         background-size: 60%;
         opacity: 0.1;
         position: absolute;
@@ -147,14 +147,14 @@ use App\Http\Controllers\CommonController;
                         <div class="admit-card">
                             <div class="d-flex justify-content-between align-items-center">
                             @if(empty($school_data->school_logo))
-                                <img class="header-logo" src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo') ) }}">
+                                <img class="header-logo" src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo')) }}">
                             @else
                                 <img class="header-logo" src="{{ asset('assets') }}/images/id_logo.png">
                             @endif
                                 
                                 <h3>{{ DB::table('schools')->where('id', auth()->user()->school_id)->value('title') }}</h3>
                                 @if(empty($school_data->school_logo))
-                                <img class="header-logo" src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo') ) }}">
+                                <img class="header-logo" src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo')) }}">
                             @else
                                 <img class="header-logo" src="{{ asset('assets') }}/images/id_logo.png">
                             @endif

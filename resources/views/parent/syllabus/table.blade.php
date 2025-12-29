@@ -18,7 +18,7 @@
         @foreach($syllabus as $subject_details)
         <tr>
             <td>  {{ $subject_details['title'] }}  </td>
-            <td><a href="{{ asset('assets/uploads/syllabus/'.$subject_details['file']) }}" class="btn btn-primary btn-sm bi bi-download" download>{{ get_phrase('Download') }}</a></td>
+            <td><a href="{{ get_upload_url('assets/uploads/syllabus', $subject_details['file']) }}" class="btn btn-primary btn-sm bi bi-download" download>{{ get_phrase('Download') }}</a></td>
                  <?php $suject_name=Subject::where('id',$subject_details['subject_id'])->first()->toArray(); ?>
             <td>{{  $suject_name['name'];  }} </td>
             <?php $class_name=Classes::where('id',$subject_details['class_id'])->first()->toArray(); ?>

@@ -1722,11 +1722,13 @@ Body Section
   left: 0;
   height: 100%;
   width: 223px;
-  background: #212529;
+  background: #2A2F36;
   box-shadow: 0 6px 25px rgba(0, 0, 0, 0.0117647059);
   z-index: 100;
   transition: all 0.5s ease;
 }
+
+
 
 .sidebar.close {
   width: 78px;
@@ -1790,6 +1792,9 @@ Body Section
   cursor: pointer;
 }
 .sidebar .nav-links > li:hover .arrow,
+.sidebar .nav-links > li:hover .link_name {
+  color: #fff;
+}
 .sidebar .nav-links > li:hover .link_name {
   color: #fff;
 }
@@ -6710,7 +6715,8 @@ input[type=time]::-webkit-calendar-picker-indicator {
   border: none;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #c92228 0%, #a90013 100%) !important;
+  /* background: linear-gradient(135deg, #c92228 0%, #a90013 100%) !important; */
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%) !important;
 }
 
 .card.bg-info:hover {

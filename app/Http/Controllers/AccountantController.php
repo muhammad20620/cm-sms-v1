@@ -563,10 +563,12 @@ class AccountantController extends Controller
         if(empty($request->photo)){
             $user_info['photo'] = $request->old_photo;
         }else{
+            delete_upload_file('assets/uploads/user-images', $request->old_photo);
+
             $file_name = random(10).'.png';
             $user_info['photo'] = $file_name;
 
-            $request->photo->move(public_path('assets/uploads/user-images/'), $file_name);
+            $request->photo->storeAs('assets/uploads/user-images', $file_name, 'public');
         }
 
         $data['user_information'] = json_encode($user_info);

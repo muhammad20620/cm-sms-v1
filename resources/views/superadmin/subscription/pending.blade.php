@@ -164,10 +164,10 @@ $subscription = Subscription::latest()->first();
 
 										@if(in_array(strtolower($fileExtension), $allowedExtensions))
 											
-											<a href="{{ asset('assets/uploads/offline_payment/'.$payment_history->document_image) }}" download 	data-lightbox="models" data-title="{{ $payment_history->document_image }}" > <strong>{{ $payment_history->document_image }} </strong>
+											<a href="{{ get_upload_url('assets/uploads/offline_payment', $payment_history->document_image) }}" download 	data-lightbox="models" data-title="{{ $payment_history->document_image }}" > <strong>{{ $payment_history->document_image }} </strong>
 											
 										@else
-											<a href="{{ asset('assets/uploads/offline_payment/'.$payment_history->document_image) }}" download  data-title="{{ $payment_history->document_image }}" > <strong>{{ $payment_history->document_image }} </strong>
+											<a href="{{ get_upload_url('assets/uploads/offline_payment', $payment_history->document_image) }}" download  data-title="{{ $payment_history->document_image }}" > <strong>{{ $payment_history->document_image }} </strong>
 										@endif
 									@endif
 	                							
@@ -254,7 +254,7 @@ $subscription = Subscription::latest()->first();
 	        			<td>{{ $payment_history->amount }}</td>
 	        			<td>{{ ucwords($payment_history->payment_type) }}</td>
 	        			<td class="link">
-	        					<a href="{{ asset('assets/uploads/offline_payment/'.$payment_history->document_image) }}" download> <strong>{{ $payment_history->document_image }} </strong></a>
+	        					<a href="{{ get_upload_url('assets/uploads/offline_payment', $payment_history->document_image) }}" download> <strong>{{ $payment_history->document_image }} </strong></a>
 	        			</td>
 	        			<td>
 	        				<span class="eBadge ebg-info">{{ get_phrase('Pending') }}</span>

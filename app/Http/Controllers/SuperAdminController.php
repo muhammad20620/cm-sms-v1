@@ -147,7 +147,7 @@ class SuperAdminController extends Controller
         if($request->school_logo){
             $ext = $request->school_logo->getClientOriginalExtension();
             $newFileName = time().'.'.$ext;
-            $request->school_logo->move(public_path('assets/uploads/school_logo'),$newFileName); // This will save file in a folder.  
+            $request->school_logo->storeAs('assets/uploads/school_logo', $newFileName, 'public');
             $school->school_logo =$newFileName;
             $school->save();
         }  
@@ -168,7 +168,7 @@ class SuperAdminController extends Controller
 
                 $imageName = time() . '.' . $data['photo']->extension();
 
-                $data['photo']->move(public_path('assets/uploads/user-images/'), $imageName);
+                $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
 
                 $photo  = $imageName;
             } else {
@@ -704,27 +704,33 @@ class SuperAdminController extends Controller
        
 
         if(!empty($request->email_logo)){
-            $request->email_logo->move(public_path('assets/uploads/email_logo/'), $email_logo);
+            delete_upload_file('assets/uploads/email_logo', get_settings('email_logo'));
+            $request->email_logo->storeAs('assets/uploads/email_logo', $email_logo, 'public');
             GlobalSettings::where('key', 'email_logo')->update(['value' => $email_logo]);
         }
         if(!empty($request->socialLogo1)){
-            $request->socialLogo1->move(public_path('assets/uploads/email_logo/'), $socialLogo1);
+            delete_upload_file('assets/uploads/email_logo', get_settings('socialLogo1'));
+            $request->socialLogo1->storeAs('assets/uploads/email_logo', $socialLogo1, 'public');
             GlobalSettings::where('key', 'socialLogo1')->update(['value' => $socialLogo1]);
         }
         if(!empty($request->socialLogo2)){
-            $request->socialLogo2->move(public_path('assets/uploads/email_logo/'), $socialLogo2);
+            delete_upload_file('assets/uploads/email_logo', get_settings('socialLogo2'));
+            $request->socialLogo2->storeAs('assets/uploads/email_logo', $socialLogo2, 'public');
             GlobalSettings::where('key', 'socialLogo2')->update(['value' => $socialLogo2]);
         }
         if(!empty($request->socialLogo3)){
-            $request->socialLogo3->move(public_path('assets/uploads/email_logo/'), $socialLogo3);
+            delete_upload_file('assets/uploads/email_logo', get_settings('socialLogo3'));
+            $request->socialLogo3->storeAs('assets/uploads/email_logo', $socialLogo3, 'public');
             GlobalSettings::where('key', 'socialLogo3')->update(['value' => $socialLogo3]);
         }
         if(!empty($request->front_logo)){
-            $request->front_logo->move(public_path('assets/uploads/logo/'), $front_logo);
+            delete_upload_file('assets/uploads/logo', get_settings('front_logo'));
+            $request->front_logo->storeAs('assets/uploads/logo', $front_logo, 'public');
             GlobalSettings::where('key', 'front_logo')->update(['value' => $front_logo]);
         }
         if (!empty($request->off_pay_ins_file)) {
-            $request->off_pay_ins_file->move(public_path('assets/uploads/offline_payment/'), $off_pay_ins_file);
+            delete_upload_file('assets/uploads/offline_payment', get_settings('off_pay_ins_file'));
+            $request->off_pay_ins_file->storeAs('assets/uploads/offline_payment', $off_pay_ins_file, 'public');
             GlobalSettings::where('key', 'off_pay_ins_file')->update(['value' => $off_pay_ins_file]);
         }
 
@@ -996,10 +1002,13 @@ class SuperAdminController extends Controller
         if(empty($request->photo)){
             $user_info['photo'] = $request->old_photo;
         }else{
+            // Delete previous photo to save space (storage + legacy public path)
+            delete_upload_file('assets/uploads/user-images', $request->old_photo);
+
             $file_name = random(10).'.png';
             $user_info['photo'] = $file_name;
 
-            $request->photo->move(public_path('assets/uploads/user-images/'), $file_name);
+            $request->photo->storeAs('assets/uploads/user-images', $file_name, 'public');
         }
 
         $data['user_information'] = json_encode($user_info);
@@ -1076,11 +1085,7 @@ class SuperAdminController extends Controller
 
             try {
                 $previous = (string) GlobalSettings::where('key', $key)->value('value');
-
-                // Delete previous storage file (only if it was stored with a relative path)
-                if ($previous !== '' && Str::contains($previous, '/') && $disk->exists($previous)) {
-                    $disk->delete($previous);
-                }
+                delete_upload_file('assets/uploads/logo', $previous);
 
                 $storedPath = $file->storeAs($dir, $filename, 'public');
                 GlobalSettings::where('key', $key)->update(['value' => $storedPath]);

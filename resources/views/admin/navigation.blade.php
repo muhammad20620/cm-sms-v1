@@ -913,7 +913,7 @@ use App\Models\User;
             @endphp  
            
               @if(!empty($school_data->school_logo))
-                <img class="" src="{{ asset('assets/uploads/school_logo/'.DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo') ) }}" width="30px" height="30px" style="border-radius: 50%; ">
+                <img class="" src="{{ get_upload_url('assets/uploads/school_logo', DB::table('schools')->where('id', auth()->user()->school_id)->value('school_logo')) }}" width="30px" height="30px" style="border-radius: 50%; ">
               @else
                 <img class="" src="{{ asset('assets') }}/images/id_logo.png" width="30px" height="30px">
               @endif

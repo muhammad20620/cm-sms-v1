@@ -232,7 +232,7 @@
                                 <div class="col-md-4 text-center">
                                     <label class="eForm-label" for="example-fileinput">{{ get_phrase('Email logo') }}</label>
                                     <div class="eCard d-block text-center bg-light">
-                                        <img src="{{ asset('assets/uploads/email_logo/'.get_settings('email_logo')) }}" class="mx-4 my-5" width="80px" height="80px"
+                                        <img src="{{ get_upload_url('assets/uploads/email_logo', get_settings('email_logo')) }}" class="mx-4 my-5" width="80px" height="80px"
                                             alt="...">
                                         <div class="eCard-body">
                                             <input class="form-control eForm-control-file" id="formFileSm" type="file" name="email_logo">
@@ -242,7 +242,7 @@
                                 <div class="col-md-4 text-center">
                                     <label class="eForm-label" for="example-fileinput">{{ get_phrase('Social logo-1') }}</label>
                                     <div class="eCard d-block text-center bg-light">
-                                        <img src="{{ asset('assets/uploads/email_logo/'.get_settings('socialLogo1')) }}" class="mx-4 my-5" width="80px" height="80px"
+                                        <img src="{{ get_upload_url('assets/uploads/email_logo', get_settings('socialLogo1')) }}" class="mx-4 my-5" width="80px" height="80px"
                                             alt="...">
                                         <div class="eCard-body">
                                             <input class="form-control eForm-control-file" id="formFileSm" type="file" name="socialLogo1">
@@ -252,7 +252,7 @@
                                 <div class="col-md-4 text-center">
                                     <label class="eForm-label" for="example-fileinput">{{ get_phrase('Social logo-2') }}</label>
                                     <div class="eCard d-block text-center bg-light">
-                                        <img src="{{ asset('assets/uploads/email_logo/'.get_settings('socialLogo2')) }}" class="mx-4 my-5" width="80px" height="80px"
+                                        <img src="{{ get_upload_url('assets/uploads/email_logo', get_settings('socialLogo2')) }}" class="mx-4 my-5" width="80px" height="80px"
                                             alt="...">
                                         <div class="eCard-body">
                                             <input class="form-control eForm-control-file" id="formFileSm" type="file" name="socialLogo2">
@@ -262,7 +262,7 @@
                                 <div class="col-md-4 text-center">
                                     <label class="eForm-label" for="example-fileinput">{{ get_phrase('Social logo-3') }}</label>
                                     <div class="eCard d-block text-center bg-light">
-                                        <img src="{{ asset('assets/uploads/email_logo/'.get_settings('socialLogo3')) }}" class="mx-4 my-5" width="80px" height="80px"
+                                        <img src="{{ get_upload_url('assets/uploads/email_logo', get_settings('socialLogo3')) }}" class="mx-4 my-5" width="80px" height="80px"
                                             alt="...">
                                         <div class="eCard-body">
                                             <input class="form-control eForm-control-file" id="formFileSm" type="file" name="socialLogo3">

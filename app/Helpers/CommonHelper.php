@@ -7,30 +7,37 @@ use Illuminate\Support\Str;
 //All common helper functions
 if (! function_exists('get_user_image')) {
     function get_user_image($file_name_or_user_id = '') {
-        if(is_numeric($file_name_or_user_id)){
-            $user_id = $file_name_or_user_id;
-            $file_name = "";
-        }else{
-            $user_id = "";
-            $file_name = $file_name_or_user_id;
+        if (is_numeric($file_name_or_user_id)) {
+            $user_information = DB::table('users')->where('id', (int) $file_name_or_user_id)->value('user_information');
+            $decoded = $user_information ? json_decode($user_information) : null;
+            $file_name = $decoded->photo ?? '';
+        } else {
+            $file_name = (string) $file_name_or_user_id;
         }
 
-        if($user_id > 0){
-            $user_id = $file_name_or_user_id;
-            $user_information = DB::table('users')->where('id', $user_id)->value('user_information');
+        $file_name = trim((string) $file_name);
 
-            $file_name = json_decode($user_information)->photo;
+        $defaultPublic = asset('assets/uploads/user-images/thumbnail.png');
+        $defaultStorage = 'assets/uploads/user-images/thumbnail.png';
+        $default = Storage::disk('public')->exists($defaultStorage)
+            ? Storage::disk('public')->url($defaultStorage)
+            : $defaultPublic;
 
-            if(file_exists( public_path().'/assets/uploads/user-images/'.$file_name ) && is_file(public_path().'/assets/uploads/user-images/'.$file_name)){
-                return asset('assets/uploads/user-images/'.$file_name);
-            }else{
-                return asset('assets/uploads/user-images/thumbnail.png');
-            }
-        }elseif(File::exists('public/assets/uploads/user-images/'.$file_name)){
-            return asset('assets/uploads/user-images/'.$file_name);
-        }else{
-            return asset('assets/uploads/user-images/thumbnail.png');
+        if ($file_name === '') {
+            return $default;
         }
+
+        $storageRelative = 'assets/uploads/user-images/' . $file_name;
+        if (Storage::disk('public')->exists($storageRelative)) {
+            return Storage::disk('public')->url($storageRelative);
+        }
+
+        $legacy = public_path('assets/uploads/user-images/' . $file_name);
+        if (file_exists($legacy) && is_file($legacy)) {
+            return asset('assets/uploads/user-images/' . $file_name);
+        }
+
+        return $default;
     }
 }
 
@@ -241,6 +248,77 @@ if (!function_exists('get_logo_url')) {
     function get_logo_url(string $key, ?string $defaultFile = 'thumbnail.png'): string
     {
         return get_settings_media_url($key, 'assets/uploads/logo', $defaultFile);
+    }
+}
+
+if (!function_exists('get_upload_url')) {
+    function get_upload_url(string $dir, ?string $fileName, ?string $defaultFile = null): string
+    {
+        $dir = trim($dir, '/');
+        $fileName = (string) ($fileName ?? '');
+
+        if ($fileName === '') {
+            return $defaultFile ? asset($dir . '/' . ltrim($defaultFile, '/')) : '';
+        }
+
+        // Absolute URLs stored as-is
+        if (Str::startsWith($fileName, ['http://', 'https://'])) {
+            return $fileName;
+        }
+
+        // If a relative path was stored (dir/filename), use it directly under the public disk
+        if (Str::contains($fileName, '/')) {
+            return Storage::disk('public')->url(ltrim($fileName, '/'));
+        }
+
+        $storageRelative = $dir . '/' . $fileName;
+        if (Storage::disk('public')->exists($storageRelative)) {
+            return Storage::disk('public')->url($storageRelative);
+        }
+
+        // Legacy public/assets fallback (for old installs)
+        $legacyPath = public_path($dir . '/' . $fileName);
+        if (file_exists($legacyPath) && is_file($legacyPath)) {
+            return asset($dir . '/' . $fileName);
+        }
+
+        return $defaultFile ? asset($dir . '/' . ltrim($defaultFile, '/')) : asset($dir . '/');
+    }
+}
+
+if (!function_exists('delete_upload_file')) {
+    /**
+     * Delete a previously uploaded file from both the public disk and legacy public/assets path.
+     *
+     * @param string $dir Base directory (e.g. "assets/uploads/user-images")
+     * @param string|null $fileName Previously stored filename or relative path
+     */
+    function delete_upload_file(string $dir, ?string $fileName): void
+    {
+        $dir = trim($dir, '/');
+        $fileName = trim((string) ($fileName ?? ''));
+
+        if ($fileName === '' || $fileName === 'thumbnail.png') {
+            return;
+        }
+
+        // If a relative path was stored, delete it directly; otherwise delete dir/filename
+        $storageRelative = Str::contains($fileName, '/')
+            ? ltrim($fileName, '/')
+            : ($dir . '/' . $fileName);
+
+        try {
+            if (Storage::disk('public')->exists($storageRelative)) {
+                Storage::disk('public')->delete($storageRelative);
+            }
+        } catch (\Throwable $e) {
+            // ignore filesystem errors (best-effort cleanup)
+        }
+
+        $legacyPath = public_path($dir . '/' . $fileName);
+        if (is_file($legacyPath)) {
+            @unlink($legacyPath);
+        }
     }
 }
 
