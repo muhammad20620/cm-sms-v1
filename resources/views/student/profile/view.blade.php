@@ -161,7 +161,10 @@
                         >{{ get_phrase('Photo') }}</label
                     >
                     <input type="hidden" class="form-control" name="old_photo" value="{{ json_decode(auth()->user()->user_information, true)['photo'] }}"/>
-                    <input type="file" class="form-control eForm-control-file" name="photo" accept="image/*" />
+                    <input type="file" class="form-control eForm-control-file" name="photo"
+                           accept="image/jpeg,image/png,image/webp"
+                           data-validate-file="1"
+                           data-max-kb="2048" />
                     </div>
 
                 <button type="submit" class="userFormEdit-btn btn">{{ get_phrase('Save Changes') }}</button>

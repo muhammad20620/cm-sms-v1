@@ -100,7 +100,10 @@
 								</div>
 								<div class="fpb-7">
 					                <label for="photo" class="eForm-label">{{ get_phrase('Photo') }}</label>
-					                <input class="form-control eForm-control-file" type="file" id="photo" name="photo" accept="image/*" required>
+					                <input class="form-control eForm-control-file" type="file" id="photo" name="photo"
+                                                   accept="image/jpeg,image/png,image/webp"
+                                                   data-validate-file="1"
+                                                   data-max-kb="2048" required>
 					            </div>
 								<div class="fpb-7">
 									<label for="admin_email" class="eForm-label">{{ get_phrase('Admin Email') }}</label>

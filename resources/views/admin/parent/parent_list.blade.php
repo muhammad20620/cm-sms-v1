@@ -116,12 +116,6 @@
                     @foreach($parents as $key => $parent)
                     <?php 
                         $info = json_decode($parent->user_information);
-                        $user_image = $info->photo;
-                        if(!empty($info->photo)){
-                            $user_image = 'uploads/user-images/'.$info->photo;
-                        }else{
-                            $user_image = 'uploads/user-images/thumbnail.png';
-                        }
                         $childs = DB::table('users')->where('parent_id', $parent->id)->get();
                     ?>
                       <tr>
@@ -137,7 +131,7 @@
                                 class="img-fluid"
                                 width="50"
                                 height="50"
-                                src="{{ asset('assets') }}/{{ $user_image }}"
+                                src="{{ get_user_image($parent->id) }}"
                               />
                             </div>
                             <div class="dAdmin_profile_name">
@@ -240,12 +234,6 @@
         @foreach($parents as $key => $parent)
         <?php 
             $info = json_decode($parent->user_information);
-            $user_image = $info->photo;
-            if(!empty($info->photo)){
-                $user_image = 'uploads/user-images/'.$info->photo;
-            }else{
-                $user_image = 'uploads/user-images/thumbnail.png';
-            }
         ?>
           <tr>
             <th scope="row">
@@ -260,7 +248,7 @@
                     class="img-fluid"
                     width="50"
                     height="50"
-                    src="{{ asset('assets') }}/{{ $user_image }}"
+                    src="{{ get_user_image($parent->id) }}"
                   />
                 </div>
                 <div class="dAdmin_profile_name">

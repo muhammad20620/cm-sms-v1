@@ -51,7 +51,10 @@
 
 			<div class="fpb-7">
                 <label for="image" class="eForm-label">{{ get_phrase('Upload notice photo') }}</label>
-                <input class="form-control eForm-control-file" type="file" id="image" name="image" accept="image/*">
+                <input class="form-control eForm-control-file" type="file" id="image" name="image"
+                       accept="image/jpeg,image/png,image/webp"
+                       data-validate-file="1"
+                       data-max-kb="2048">
             </div>
 
 			<div class="fpb-7 pt-2">

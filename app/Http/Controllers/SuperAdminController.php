@@ -128,6 +128,10 @@ class SuperAdminController extends Controller
 
     public function createSchool(Request $request)
     {
+        $request->validate([
+            'school_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
         $school_email = $data['school_email'];
         $admin_email = $data['admin_email'];
@@ -164,12 +168,10 @@ class SuperAdminController extends Controller
                 'running_session' => $session->id,
             ]);
             
-            if (!empty($data['photo'])) {
-
+            if ($request->hasFile('photo')) {
+                $data['photo'] = $request->file('photo');
                 $imageName = time() . '.' . $data['photo']->extension();
-
                 $data['photo']->storeAs('assets/uploads/user-images', $imageName, 'public');
-
                 $photo  = $imageName;
             } else {
                 $photo = '';
@@ -1056,9 +1058,9 @@ class SuperAdminController extends Controller
     //logo update
     function update_logo(Request $request){
         $request->validate([
-            'dark_logo'  => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:4096'],
-            'light_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:4096'],
-            'white_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:4096'],
+            'dark_logo'  => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
+            'light_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
+            'white_logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
             'favicon'    => ['nullable', 'file', 'mimes:png,jpg,jpeg,ico,svg', 'max:2048'],
         ]);
 

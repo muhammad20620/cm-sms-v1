@@ -134,7 +134,9 @@
             <label for="photo" class="col-sm-2 col-eForm-label">{{ get_phrase('Student profile image') }}</label>
             <div class="col-md-10">
                 <input class="form-control eForm-control-file" type="file" id="photo" name="photo"
-                    accept="image/*">
+                    accept="image/jpeg,image/png,image/webp"
+                    data-validate-file="1"
+                    data-max-kb="2048">
             </div>
         </div>
 

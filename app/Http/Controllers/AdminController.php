@@ -46,7 +46,7 @@ use App\Models\Appraisal_submit;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
-use Mail;
+use Illuminate\Support\Facades\Mail;
 use App\Mail\FreeEmail;
 use App\Mail\StudentsEmail;
 use App\Mail\NewUserEmail;
@@ -192,9 +192,13 @@ class AdminController extends Controller
 
     public function adminCreate(Request $request)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
 
             $imageName = time() . '.' . $data['photo']->extension();
 
@@ -248,9 +252,13 @@ class AdminController extends Controller
 
     public function adminUpdate(Request $request, $id)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
             $user_information = User::where('id', $id)->value('user_information');
             $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
@@ -474,8 +482,12 @@ class AdminController extends Controller
 
     public function adminTeacherCreate(Request $request)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
 
             $imageName = time() . '.' . $data['photo']->extension();
 
@@ -529,9 +541,13 @@ class AdminController extends Controller
 
     public function teacherUpdate(Request $request, $id)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
             $user_information = User::where('id', $id)->value('user_information');
             $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
@@ -618,8 +634,12 @@ class AdminController extends Controller
 
     public function accountantCreate(Request $request)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
 
             $imageName = time() . '.' . $data['photo']->extension();
 
@@ -669,9 +689,13 @@ class AdminController extends Controller
 
     public function accountantUpdate(Request $request, $id)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
             $user_information = User::where('id', $id)->value('user_information');
             $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
@@ -759,8 +783,12 @@ class AdminController extends Controller
 
     public function librarianCreate(Request $request)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
 
             $imageName = time() . '.' . $data['photo']->extension();
 
@@ -811,9 +839,13 @@ class AdminController extends Controller
 
     public function librarianUpdate(Request $request, $id)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
             $user_information = User::where('id', $id)->value('user_information');
             $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
@@ -902,9 +934,12 @@ class AdminController extends Controller
 
     public function parentCreate(Request $request)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
-
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
 
             $imageName = time() . '.' . $data['photo']->extension();
 
@@ -983,10 +1018,14 @@ class AdminController extends Controller
 
     public function parentUpdate(Request $request, $id)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
 
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
             $user_information = User::where('id', $id)->value('user_information');
             $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
@@ -1102,9 +1141,13 @@ class AdminController extends Controller
 
     public function studentCreate(Request $request)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
         $code = student_code();
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
 
             $imageName = time() . '.' . $data['photo']->extension();
 
@@ -1168,8 +1211,12 @@ class AdminController extends Controller
 
     public function studentUpdate(Request $request, $id)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
-        if (!empty($data['photo'])) {
+        if ($request->hasFile('photo')) {
+            $data['photo'] = $request->file('photo');
             $user_information = User::where('id', $id)->value('user_information');
             $old_photo = $user_information ? (json_decode($user_information)->photo ?? '') : '';
 
@@ -1325,6 +1372,9 @@ class AdminController extends Controller
 
     public function offlineAdmissionCreate(Request $request)
     {
+        $request->validate([
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $package = Subscription::where('school_id', auth()->user()->school_id)->latest()->first();
 
 
@@ -1339,7 +1389,8 @@ class AdminController extends Controller
             $data = $request->all();
             $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
 
-            if (!empty($data['photo'])) {
+            if ($request->hasFile('photo')) {
+                $data['photo'] = $request->file('photo');
 
                 $imageName = time() . '.' . $data['photo']->extension();
 
@@ -2297,7 +2348,11 @@ class AdminController extends Controller
             ->first();
 
         if ($exam) {
-            $response = view('admin.marks.marks_list', ['enroll_students' => $enroll_students, 'page_data' => $page_data])->render();
+            $response = view('admin.marks.marks_list', [
+                'enroll_students' => $enroll_students,
+                'page_data' => $page_data,
+                'exam' => $exam,
+            ])->render();
             return response()->json(['status' => 'success', 'html' => $response]);
         } else {
             return response()->json(['status' => 'error', 'message' => 'No records found for the specified filter. First create exam for the selected filter.']);
@@ -2907,7 +2962,7 @@ class AdminController extends Controller
     public function feeManagerCreate(Request $request, $value = "")
     {
         $data = $request->all();
-        $data['total_amount'] = $data['amount'];
+        $data['total_amount'] = $data['total_amount'];
         if ($value == 'single') {
 
             if ($data['paid_amount'] > $data['total_amount']) {
@@ -3493,6 +3548,9 @@ class AdminController extends Controller
 
     public function noticeboardCreate(Request $request)
     {
+        $request->validate([
+            'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
         $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
@@ -3501,14 +3559,10 @@ class AdminController extends Controller
         $data['school_id'] = auth()->user()->school_id;
         $data['session_id'] = $active_session;
 
-        if (!empty($data['image'])) {
-            $old_image = (string) Noticeboard::where('id', $id)->value('image');
-
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image');
             $imageName = time() . '.' . $data['image']->extension();
-
-            delete_upload_file('assets/uploads/noticeboard', $old_image);
             $data['image']->storeAs('assets/uploads/noticeboard', $imageName, 'public');
-
             $data['image']  = $imageName;
         }
 
@@ -3525,6 +3579,9 @@ class AdminController extends Controller
 
     public function noticeboardUpdate(Request $request, $id = "")
     {
+        $request->validate([
+            'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
         $data = $request->all();
 
         $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
@@ -3533,12 +3590,13 @@ class AdminController extends Controller
         $data['school_id'] = auth()->user()->school_id;
         $data['session_id'] = $active_session;
 
-        if (!empty($data['image'])) {
-
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image');
+            $old_image = (string) Noticeboard::where('id', $id)->value('image');
             $imageName = time() . '.' . $data['image']->extension();
 
+            delete_upload_file('assets/uploads/noticeboard', $old_image);
             $data['image']->storeAs('assets/uploads/noticeboard', $imageName, 'public');
-
             $data['image']  = $imageName;
         }
 

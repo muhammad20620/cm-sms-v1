@@ -1170,6 +1170,7 @@ use App\Models\User;
 
     <!--Custom Script-->
     <script src="{{ asset('assets/js/script.js') }}"></script>
+    <script src="{{ asset('assets/js/custom.js') }}"></script>
 
     <!-- Calender js -->
     <script src="{{ asset('assets/calender/main.js') }}"></script>
@@ -1248,6 +1249,17 @@ use App\Models\User;
 		}
 				toastr.warning("{{ session('warning') }}");
 		@endif
+
+        @if ($errors->any())
+        toastr.options =
+        {
+            "closeButton" : true,
+            "progressBar" : true
+        }
+            @foreach ($errors->all() as $error)
+                toastr.error(@json($error));
+            @endforeach
+        @endif
     </script>
 
     <script>

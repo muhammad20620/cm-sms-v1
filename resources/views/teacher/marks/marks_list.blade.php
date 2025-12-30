@@ -7,9 +7,12 @@ use App\Models\Grade;
 
 ?>
 
-<div
-  class="att-report-banner d-flex justify-content-center justify-content-md-between align-items-center flex-wrap"
->
+<?php
+  // Offline exam total marks (used for max validation + percentage-based grade mapping)
+  $totalMarks = isset($exam) && !empty($exam->total_marks) ? (float) $exam->total_marks : 100;
+?>
+
+<div class="att-report-banner d-flex justify-content-center justify-content-md-between align-items-center flex-wrap">
   <div class="att-report-summary order-1">
     <h4 class="title">{{ get_phrase('Manage marks') }}</h4>
     <p class="summary-item">{{ get_phrase('Class') }} : <span>{{ $page_data['class_name'] }}</span></p>
@@ -24,38 +27,16 @@ use App\Models\Grade;
     />
   </div>
 </div>
-
-@if(count($enroll_students) > 0)
-<div class="export position-relative">
-  <button class="eBtn-3 dropdown-toggle float-end mb-4" type="button" id="defaultDropdown" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">
-    <span class="pr-10">
-      <svg xmlns="http://www.w3.org/2000/svg" width="12.31" height="10.77" viewBox="0 0 10.771 12.31">
-        <path id="arrow-right-from-bracket-solid" d="M3.847,1.539H2.308a.769.769,0,0,0-.769.769V8.463a.769.769,0,0,0,.769.769H3.847a.769.769,0,0,1,0,1.539H2.308A2.308,2.308,0,0,1,0,8.463V2.308A2.308,2.308,0,0,1,2.308,0H3.847a.769.769,0,1,1,0,1.539Zm8.237,4.39L9.007,9.007A.769.769,0,0,1,7.919,7.919L9.685,6.155H4.616a.769.769,0,0,1,0-1.539H9.685L7.92,2.852A.769.769,0,0,1,9.008,1.764l3.078,3.078A.77.77,0,0,1,12.084,5.929Z" transform="translate(0 12.31) rotate(-90)" fill="#00a3ff"></path>
-      </svg>
-    </span>
-    {{ get_phrase('Export') }}
-  </button>
-  <ul class="dropdown-menu dropdown-menu-end eDropdown-menu-2">
-    <li>
-        <a class="dropdown-item" id="pdf" href="javascript:;" onclick="Export()">{{ get_phrase('PDF') }}</a>
-    </li>
-    <li>
-        <a class="dropdown-item" id="print" href="javascript:;" onclick="printableDiv('mark_report')">{{ get_phrase('Print') }}</a>
-    </li>
-  </ul>
-</div>
-@endif
-
 @if(count($enroll_students) > 0)
 <div class="mark_report" id="mark_report">
     <table class="table eTable">
         <thead>
             <tr>
-                <th>{{ get_phrase('Student name') }}</td>
-                <th>{{ get_phrase('Mark') }}</td>
-                <th>{{ get_phrase('Grade point') }}</td>
-                <th>{{ get_phrase('Comment') }}</td>
-                <th>{{ get_phrase('Action') }}</td>
+                <th>{{ get_phrase('Student name') }}</th>
+                <th>{{ get_phrase('Mark') }}</th>
+                <th>{{ get_phrase('Grade point') }}</th>
+                <th>{{ get_phrase('Comment') }}</th>
+                <th>{{ get_phrase('Action') }}</th>
             </tr>   
         </thead>
         <tbody>
@@ -92,10 +73,14 @@ use App\Models\Grade;
                 <tr>
                     <td>{{ $student_details->name }}</td>
                     <td>
-                        <input class="form-control eForm-control" type="number" id="mark-{{ $enroll_student->user_id }}" name="mark" placeholder="mark" min="0" value="{{ $user_marks }}" required onchange="get_grade(this.value, this.id)">
+                        <input class="form-control eForm-control" type="number" id="mark-{{ $enroll_student->user_id }}" name="mark"
+                               placeholder="0 - {{ (int) $totalMarks }}"
+                               min="0" max="{{ (int) $totalMarks }}" step="1"
+                               value="{{ $user_marks }}" required
+                               onchange="get_grade(this.value, this.id, {{ (int) $totalMarks }})">
                     </td>
                     <td>
-                        <span id="grade-for-mark-{{ $enroll_student->user_id }}">{{ get_grade($user_marks) }}</span> 
+                        <span id="grade-for-mark-{{ $enroll_student->user_id }}">{{ get_grade_for_total_marks($user_marks, $totalMarks) }}</span> 
                     </td>
                     <td>
                         <input class="form-control eForm-control" type="text" id="comment-{{ $enroll_student->user_id }}" name="comment" placeholder="comment" value="{{ $comment }}" required>
@@ -115,6 +100,30 @@ use App\Models\Grade;
     <span class="">{{ get_phrase('No data found') }}</span>
 </div>
 @endif
+@if(count($enroll_students) > 0)
+<div class="export position-relative">
+  <button class="eBtn-3 dropdown-toggle float-end mb-4" type="button" id="defaultDropdown" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">
+    <span class="pr-10">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12.31" height="10.77" viewBox="0 0 10.771 12.31">
+        <path id="arrow-right-from-bracket-solid" d="M3.847,1.539H2.308a.769.769,0,0,0-.769.769V8.463a.769.769,0,0,0,.769.769H3.847a.769.769,0,0,1,0,1.539H2.308A2.308,2.308,0,0,1,0,8.463V2.308A2.308,2.308,0,0,1,2.308,0H3.847a.769.769,0,1,1,0,1.539Zm8.237,4.39L9.007,9.007A.769.769,0,0,1,7.919,7.919L9.685,6.155H4.616a.769.769,0,0,1,0-1.539H9.685L7.92,2.852A.769.769,0,0,1,9.008,1.764l3.078,3.078A.77.77,0,0,1,12.084,5.929Z" transform="translate(0 12.31) rotate(-90)" fill="#00a3ff"></path>
+      </svg>
+    </span>
+    {{ get_phrase('Export') }}
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end eDropdown-menu-2">
+    <li>
+        <a class="dropdown-item" id="pdf" href="javascript:;" onclick="Export()">{{ get_phrase('PDF') }}</a>
+    </li>
+    <li>
+        <a class="dropdown-item" id="print" href="javascript:;" onclick="printableDiv('mark_report')">{{ get_phrase('Print') }}</a>
+    </li>
+  </ul>
+</div>
+@endif
+
+
+
+
 
 <script type="text/javascript">
 
@@ -129,13 +138,30 @@ use App\Models\Grade;
         var exam_category_id = '{{ $page_data['exam_category_id'] }}';
         var mark = $('#mark-' + student_id).val();
         var comment = $('#comment-' + student_id).val();
+        var total_marks = {{ (int) $totalMarks }};
+
+        if (mark !== "" && total_marks > 0 && parseFloat(mark) > total_marks) {
+            toastr.error('Mark cannot be greater than ' + total_marks);
+            return;
+        }
         if(subject_id != ""){
             $.ajax({
                 type : 'GET',
                 url : "{{ route('update.mark') }}",
                 data : {student_id : student_id, class_id : class_id, section_id : section_id, subject_id : subject_id, session_id: session_id, exam_category_id : exam_category_id, mark : mark, comment : comment},
                 success : function(response){
-                    toastr.success('{{ get_phrase('Value has been updated successfully') }}');
+                    if (response && response.status === 'success') {
+                        toastr.success('{{ get_phrase('Value has been updated successfully') }}');
+                    } else {
+                        toastr.error((response && response.message) ? response.message : 'Failed to update mark.');
+                    }
+                },
+                error: function(xhr){
+                    var message = 'Failed to update mark.';
+                    if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    }
+                    toastr.error(message);
                 }
             });
         }else{
@@ -143,10 +169,12 @@ use App\Models\Grade;
         }
     }
 
-    function get_grade(exam_mark, id){
+    function get_grade(exam_mark, id, total_marks){
         let url = "{{ route('get.grade', ['exam_mark' => ":exam_mark"]) }}";
         url = url.replace(":exam_mark", exam_mark);
-        console.log(url);
+        if (total_marks) {
+            url += '?total_marks=' + total_marks;
+        }
         $.ajax({
             url : url,
             success : function(response){

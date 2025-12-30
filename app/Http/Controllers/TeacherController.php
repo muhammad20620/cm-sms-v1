@@ -112,7 +112,11 @@ class TeacherController extends Controller
         ->first();
 
         if ($exam) {
-            $response = view('teacher.marks.marks_list', ['enroll_students' => $enroll_students, 'page_data' => $page_data])->render();
+            $response = view('teacher.marks.marks_list', [
+                'enroll_students' => $enroll_students,
+                'page_data' => $page_data,
+                'exam' => $exam,
+            ])->render();
             return response()->json(['status' => 'success', 'html' => $response]);
         } else {
             return response()->json(['status' => 'error', 'message' => 'No records found for the specified filter.']);

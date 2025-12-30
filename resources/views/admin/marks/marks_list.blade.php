@@ -8,6 +8,11 @@ use App\Models\Grade;
 
 ?>
 
+<?php
+  // Offline exam total marks (used for max validation + percentage-based grade mapping)
+  $totalMarks = isset($exam) && !empty($exam->total_marks) ? (float) $exam->total_marks : 100;
+?>
+
 
 <div
   class="att-report-banner d-flex justify-content-center justify-content-md-between align-items-center flex-wrap"
@@ -98,10 +103,13 @@ use App\Models\Grade;
                 <tr>
                     <td>{{ $student_details->name }}</td>
                     <td>
-                        <input class="form-control eForm-control" type="number" id="mark-{{ $enroll_student->user_id }}" name="mark" placeholder="mark" min="0" value="{{ $user_marks }}" required onchange="get_grade(this.value, this.id)">
+                        <input class="form-control eForm-control" type="number" id="mark-{{ $enroll_student->user_id }}" name="mark"
+                               placeholder="0 - {{ (int) $totalMarks }}"
+                               min="0" max="{{ (int) $totalMarks }}" step="1"
+                               value="{{ $user_marks }}" required onchange="get_grade(this.value, this.id, {{ (int) $totalMarks }})">
                     </td>
                     <td>
-                        <span id="grade-for-mark-{{ $enroll_student->user_id }}">{{ get_grade($user_marks) }}</span> 
+                        <span id="grade-for-mark-{{ $enroll_student->user_id }}">{{ get_grade_for_total_marks($user_marks, $totalMarks) }}</span> 
                     </td>
                     <td>
                         <input class="form-control eForm-control" type="text" id="comment-{{ $enroll_student->user_id }}" name="comment" placeholder="comment" value="{{ $comment }}" required>
@@ -221,13 +229,30 @@ use App\Models\Grade;
         var exam_category_id = '{{ $page_data['exam_category_id'] }}';
         var mark = $('#mark-' + student_id).val();
         var comment = $('#comment-' + student_id).val();
+        var total_marks = {{ (int) $totalMarks }};
+
+        if (mark !== "" && total_marks > 0 && parseFloat(mark) > total_marks) {
+            toastr.error('Mark cannot be greater than ' + total_marks);
+            return;
+        }
         if(subject_id != ""){
             $.ajax({
                 type : 'GET',
                 url : "{{ route('update.mark') }}",
                 data : {student_id : student_id, class_id : class_id, section_id : section_id, subject_id : subject_id, session_id: session_id, exam_category_id : exam_category_id, mark : mark, comment : comment},
                 success : function(response){
-                    toastr.success('{{ get_phrase('Value has been updated successfully') }}');
+                    if (response && response.status === 'success') {
+                        toastr.success('{{ get_phrase('Value has been updated successfully') }}');
+                    } else {
+                        toastr.error((response && response.message) ? response.message : 'Failed to update mark.');
+                    }
+                },
+                error: function(xhr){
+                    var message = 'Failed to update mark.';
+                    if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                        message = xhr.responseJSON.message;
+                    }
+                    toastr.error(message);
                 }
             });
         }else{
@@ -235,10 +260,13 @@ use App\Models\Grade;
         }
     }
 
-    function get_grade(exam_mark, id){
+    function get_grade(exam_mark, id, total_marks){
         let url = "{{ route('get.grade', ['exam_mark' => ":exam_mark"]) }}";
         url = url.replace(":exam_mark", exam_mark);
         console.log(url);
+        if (total_marks) {
+            url += '?total_marks=' + total_marks;
+        }
         $.ajax({
             url : url,
             success : function(response){

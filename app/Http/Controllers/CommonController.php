@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use App\Models\Gradebook;
 use App\Models\Subject;
 use App\Models\School;
+use App\Models\Exam;
 use DB;
 use PDF;
 
@@ -192,12 +193,31 @@ class CommonController extends Controller
 
     public function getGrade($acquired_mark = '')
     {
+        $total_marks = request()->query('total_marks');
+        if ($total_marks !== null && $total_marks !== '') {
+            echo get_grade_for_total_marks($acquired_mark, $total_marks);
+            return;
+        }
         echo get_grade($acquired_mark);
     }
 
     public function markUpdate(Request $request)
     {
         $data = $request->all();
+
+        // Basic validation
+        $markRaw = $data['mark'] ?? null;
+        if ($markRaw === null || $markRaw === '') {
+            return response()->json(['status' => 'error', 'message' => 'Mark is required.'], 422);
+        }
+        if (!is_numeric($markRaw) || (float) $markRaw < 0) {
+            return response()->json(['status' => 'error', 'message' => 'Mark must be a number greater than or equal to 0.'], 422);
+        }
+
+        $subjectId = $data['subject_id'] ?? null;
+        if ($subjectId === null || $subjectId === '') {
+            return response()->json(['status' => 'error', 'message' => 'Subject is required.'], 422);
+        }
 
         if (!empty($data['session_id'])) {
             $active_session  = $data['session_id'];
@@ -208,6 +228,22 @@ class CommonController extends Controller
         $data['school_id'] = auth()->user()->school_id;
         $data['session_id'] = $active_session;
 
+        // Enforce max marks based on the configured offline exam
+        $exam = Exam::where('exam_type', 'offline')
+            ->where('class_id', $data['class_id'] ?? null)
+            ->where('subject_id', $subjectId)
+            ->where('session_id', $data['session_id'])
+            ->where('exam_category_id', $data['exam_category_id'] ?? null)
+            ->where('school_id', $data['school_id'])
+            ->first();
+
+        if ($exam && is_numeric($exam->total_marks) && (float) $exam->total_marks > 0) {
+            $max = (float) $exam->total_marks;
+            if ((float) $markRaw > $max) {
+                return response()->json(['status' => 'error', 'message' => "Mark cannot be greater than {$max}."], 422);
+            }
+        }
+
         $query = Gradebook::where('exam_category_id', $data['exam_category_id'])
             ->where('class_id', $data['class_id'])
             ->where('section_id', $data['section_id'])
@@ -216,22 +252,25 @@ class CommonController extends Controller
             ->where('session_id', $data['session_id'])
             ->first();
 
-        if (!empty($query) && $query->count() > 0) {
+        if (!empty($query)) {
 
-            $marks = json_decode($query->marks, true);
-            $marks[$data['subject_id']] = $data['mark'];
+            $marks = json_decode((string) $query->marks, true);
+            $marks = is_array($marks) ? $marks : [];
+            $marks[$subjectId] = $markRaw;
             $query->marks = json_encode($marks);
             $query->comment = $data['comment'];
             $query->save();
 
 
         } else {
-            $mark[$data['subject_id']] = $data['mark'];
+            $mark[$subjectId] = $markRaw;
             $marks = json_encode($mark);
             $data['marks'] = $marks;
             $data['timestamp'] = strtotime(date('Y-m-d'));
             Gradebook::create($data);
         }
+
+        return response()->json(['status' => 'success']);
     }
 
     public function get_user_by_id_from_user_table($id)

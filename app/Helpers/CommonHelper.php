@@ -425,9 +425,11 @@ if (! function_exists('null_checker')) {
 if ( ! function_exists('get_grade'))
 {
   function get_grade($acquired_number = "", $type = "") {
-    if (empty($acquired_number)) {
+    // NOTE: empty(0) is true in PHP, but "0" can be a valid mark. Only treat null/'' as missing.
+    if ($acquired_number === null || $acquired_number === '') {
       return "N/A";
     }else{
+      $acquired_number = is_numeric($acquired_number) ? (float) $acquired_number : $acquired_number;
       $acquired_grade = DB::table('grades')->where('school_id', auth()->user()->school_id)->distinct()->get();
       if ($acquired_grade->count() > 0) {
         $founder = false;
@@ -435,7 +437,7 @@ if ( ! function_exists('get_grade'))
           if ($acquired_number >= $grade->mark_from && $acquired_number <= $grade->mark_upto) {
             $founder = true;
             if (!empty($type)) {
-              return $grade[$type];
+              return $grade->$type ?? "N/A";
             }else{
               return $grade->name.'('.$grade->grade_point.')';
             }
@@ -448,6 +450,28 @@ if ( ! function_exists('get_grade'))
         return "N/A";
       }
     }
+  }
+}
+
+// GET GRADE (by percentage using an exam's total marks)
+if ( ! function_exists('get_grade_for_total_marks'))
+{
+  function get_grade_for_total_marks($acquired_number = "", $total_marks = "", $type = "") {
+    if ($acquired_number === null || $acquired_number === '') {
+      return "N/A";
+    }
+
+    $acquired_number = is_numeric($acquired_number) ? (float) $acquired_number : null;
+    $total_marks = is_numeric($total_marks) ? (float) $total_marks : null;
+
+    if ($acquired_number === null || $total_marks === null || $total_marks <= 0) {
+      return get_grade($acquired_number ?? "", $type);
+    }
+
+    // Convert to percentage (0-100) so grade ranges can be configured once regardless of exam total.
+    $percentage = ($acquired_number / $total_marks) * 100;
+
+    return get_grade($percentage, $type);
   }
 }
 
