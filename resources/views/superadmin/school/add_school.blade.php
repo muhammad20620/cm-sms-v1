@@ -29,7 +29,7 @@
 			</div>
 
 			<div class="eMain">
-				<form method="POST" enctype="multipart/form-data" class="d-block ajaxForm" action="{{ route('superadmin.school.create') }}">
+				<form method="POST" enctype="multipart/form-data" class="d-block ajaxForm" action="{{ route('superadmin.school.create') }}" autocomplete="off">
 					@csrf 
 					<div class="row">
 						<div class="col-md-6 pb-3">
@@ -45,7 +45,7 @@
 								</div>
 								<div class="fpb-7">
 									<label for="school_email" class="eForm-label">{{ get_phrase('School Email') }}</label>
-									<input type="text" class="form-control eForm-control" id="school_email" name="school_email" required>
+									<input type="email" class="form-control eForm-control" id="school_email" name="school_email" required autocomplete="off" autocapitalize="none" spellcheck="false">
 								</div>
 								<div class="fpb-7">
 									<label for="school_phone" class="eForm-label">{{ get_phrase('School Phone') }}</label>
@@ -107,11 +107,11 @@
 					            </div>
 								<div class="fpb-7">
 									<label for="admin_email" class="eForm-label">{{ get_phrase('Admin Email') }}</label>
-									<input type="text" class="form-control eForm-control" id="admin_email" name="admin_email" required>
+									<input type="email" class="form-control eForm-control" id="admin_email" name="admin_email" required autocomplete="off" autocapitalize="none" spellcheck="false">
 								</div>
 								<div class="fpb-7">
 									<label for="admin_password" class="eForm-label">{{ get_phrase('Admin Password') }}</label>
-									<input type="password" class="form-control eForm-control" id="admin_password" name="admin_password" required>
+									<input type="password" class="form-control eForm-control" id="admin_password" name="admin_password" required autocomplete="new-password">
 								</div>
 								<div class="pt-2">
 									<button type="submit" class="btn-form float-end">{{ get_phrase('Submit') }}</button>

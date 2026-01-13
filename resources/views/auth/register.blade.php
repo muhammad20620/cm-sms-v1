@@ -8,7 +8,7 @@
                 <div class="card-header">{{ get_phrase('Register') }}</div>
 
                 <div class="card-body">
-                    <form method="POST" action="{{ route('register') }}">
+                    <form method="POST" action="{{ route('register') }}" autocomplete="off">
                         @csrf
 
                         <div class="row mb-3">
@@ -29,7 +29,7 @@
                             <label for="email" class="col-md-4 col-form-label text-md-end">{{ get_phrase('Email Address') }}</label>
 
                             <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email">
+                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="off" autocapitalize="none" spellcheck="false">
 
                                 @error('email')
                                     <span class="invalid-feedback" role="alert">

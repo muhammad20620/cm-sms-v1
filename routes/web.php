@@ -13,6 +13,7 @@ use App\Http\Controllers\LibrarianController;
 use App\Http\Controllers\AccountantController;
 use App\Http\Controllers\Updater;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 /*
 |--------------------------------------------------------------------------
@@ -947,3 +948,12 @@ Route::controller(InstallController::class)->group(function () {
 
 });
 //Installation routes end here
+
+
+Route::get('testMail', function () {
+    Mail::raw('This is a simple SMTP connectivity test.', function ($message) {
+        $message->to('test@example.com')->subject('SMTP Test Email');
+    });
+
+    return 'Test email sent.';
+})->name('testMail');
