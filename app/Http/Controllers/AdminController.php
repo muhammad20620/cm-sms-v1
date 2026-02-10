@@ -28,6 +28,12 @@ use App\Models\Syllabus;
 use App\Models\ExpenseCategory;
 use App\Models\Expense;
 use App\Models\StudentFeeManager;
+use App\Models\ClassFeeStructure;
+use App\Models\FeeConcession;
+use App\Models\FeeSiblingDiscount;
+use App\Models\SchoolApplication;
+use App\Mail\ApplicationStatusEmail;
+use Illuminate\Support\Facades\Log;
 use App\Models\Book;
 use App\Models\Chat;
 use App\Models\MessageThrade;
@@ -43,6 +49,9 @@ use App\Models\Payments;
 use App\Models\Feedback;
 use App\Models\Appraisal;
 use App\Models\Appraisal_submit;
+use App\Models\Guardian;
+use App\Models\StudentGuardian;
+use App\Models\StudentWithdrawal;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
@@ -938,6 +947,10 @@ class AdminController extends Controller
             'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
         $data = $request->all();
+
+        if (!empty($data['id_card_no']) && !is_valid_id_card_no($data['id_card_no'])) {
+            return redirect()->back()->with('error', 'Parent ID card number must be exactly 13 digits.');
+        }
         if ($request->hasFile('photo')) {
             $data['photo'] = $request->file('photo');
 
@@ -955,7 +968,8 @@ class AdminController extends Controller
             'birthday' => strtotime($data['birthday']),
             'phone' => $data['phone'],
             'address' => $data['address'],
-            'photo' => $photo
+            'photo' => $photo,
+            'id_card_no' => $data['id_card_no'] ?? null
         );
 
         $data['user_information'] = json_encode($info);
@@ -976,6 +990,35 @@ class AdminController extends Controller
         } else {
             return redirect()->back()->with('error', 'Email was already taken.');
         }
+
+        // Ensure guardian record exists for this parent CNIC
+        $school_id = (int) auth()->user()->school_id;
+        $cnic = (string) ($data['id_card_no'] ?? '');
+        $normalized = normalize_id_card_no($cnic);
+        if ($normalized !== '') {
+            $guardian = Guardian::where('school_id', $school_id)
+                ->where('id_card_no_normalized', $normalized)
+                ->first();
+            if (empty($guardian)) {
+                $guardian = Guardian::create([
+                    'school_id' => $school_id,
+                    'user_id' => $parent->id,
+                    'name' => $parent->name,
+                    'id_card_no' => $cnic,
+                    'id_card_no_normalized' => $normalized,
+                    'phone' => $data['phone'] ?? null,
+                    'address' => $data['address'] ?? null,
+                ]);
+            } else {
+                Guardian::where('id', $guardian->id)->update([
+                    'user_id' => $guardian->user_id ?: $parent->id,
+                    'name' => $guardian->name ?: $parent->name,
+                    'id_card_no' => $guardian->id_card_no ?: $cnic,
+                    'phone' => $guardian->phone ?: ($data['phone'] ?? null),
+                    'address' => $guardian->address ?: ($data['address'] ?? null),
+                ]);
+            }
+        }
         $students = $data['student_id'];
         $class_id = $data['class_id'];
         $section_id = $data['student_id'];
@@ -984,9 +1027,17 @@ class AdminController extends Controller
             $users = User::where('id', $student)->get();
 
             if (count($users) == 1) {
-                User::where('id', $student)->update([
-                    'parent_id' => $parent->id,
-                ]);
+                    User::where('id', $student)->update([
+                        'parent_id' => $parent->id,
+                    ]);
+
+                    // Link student to guardian (if we have CNIC)
+                    if (isset($guardian) && !empty($guardian)) {
+                        StudentGuardian::firstOrCreate(
+                            ['student_id' => (int) $student, 'guardian_id' => (int) $guardian->id, 'relation' => 'father'],
+                            ['is_primary' => 1, 'is_fee_payer' => 1]
+                        );
+                    }
             } else {
                 if (count($users) > 1) {
                     foreach ($users as $user) {
@@ -1023,6 +1074,10 @@ class AdminController extends Controller
         ]);
         $data = $request->all();
 
+        if (!empty($data['id_card_no']) && !is_valid_id_card_no($data['id_card_no'])) {
+            return redirect()->back()->with('error', 'Parent ID card number must be exactly 13 digits.');
+        }
+
 
         if ($request->hasFile('photo')) {
             $data['photo'] = $request->file('photo');
@@ -1053,7 +1108,8 @@ class AdminController extends Controller
             'birthday' => strtotime($data['birthday']),
             'phone' => $data['phone'],
             'address' => $data['address'],
-            'photo' => $photo
+            'photo' => $photo,
+            'id_card_no' => $data['id_card_no'] ?? null
         );
 
         $data['user_information'] = json_encode($info);
@@ -1063,6 +1119,35 @@ class AdminController extends Controller
             'email' => $data['email'],
             'user_information' => $data['user_information'],
         ]);
+
+        // Sync guardian CNIC for this parent user
+        $school_id = (int) auth()->user()->school_id;
+        $cnic = (string) ($data['id_card_no'] ?? '');
+        $normalized = normalize_id_card_no($cnic);
+        if ($normalized !== '') {
+            $guardian = Guardian::where('school_id', $school_id)
+                ->where('id_card_no_normalized', $normalized)
+                ->first();
+            if (empty($guardian)) {
+                Guardian::create([
+                    'school_id' => $school_id,
+                    'user_id' => (int) $id,
+                    'name' => $data['name'] ?? null,
+                    'id_card_no' => $cnic,
+                    'id_card_no_normalized' => $normalized,
+                    'phone' => $data['phone'] ?? null,
+                    'address' => $data['address'] ?? null,
+                ]);
+            } else {
+                Guardian::where('id', $guardian->id)->update([
+                    'user_id' => $guardian->user_id ?: (int) $id,
+                    'name' => $guardian->name ?: ($data['name'] ?? null),
+                    'id_card_no' => $guardian->id_card_no ?: $cnic,
+                    'phone' => $guardian->phone ?: ($data['phone'] ?? null),
+                    'address' => $guardian->address ?: ($data['address'] ?? null),
+                ]);
+            }
+        }
 
 
         //Previous parent has been empty
@@ -1106,29 +1191,69 @@ class AdminController extends Controller
      */
     public function studentList(Request $request)
     {
-        $search = $request['search'] ?? "";
-        $class_id = $request['class_id'] ?? "";
-        $section_id = $request['section_id'] ?? "";
+        $search = (string) ($request->input('search') ?? '');
+        $class_id = (string) ($request->input('class_id') ?? '');
+        $section_id = (string) ($request->input('section_id') ?? '');
 
-        $users = User::where(function ($query) use ($search) {
-            $query->where('users.name', 'LIKE', "%{$search}%")
-                ->orWhere('users.email', 'LIKE', "%{$search}%");
-        });
+        $school_id = (int) auth()->user()->school_id;
 
-        $users->where('users.school_id', auth()->user()->school_id)
-            ->where('users.role_id', 7);
+        $query = DB::table('enrollments as e')
+            ->join('users as s', 's.id', '=', 'e.user_id')
+            ->leftJoin('classes as c', 'c.id', '=', 'e.class_id')
+            ->leftJoin('sections as sec', 'sec.id', '=', 'e.section_id')
+            ->leftJoin('student_withdrawals as sw', function ($join) use ($school_id) {
+                $join->on('sw.student_id', '=', 's.id')
+                    ->where('sw.school_id', '=', $school_id);
+            })
+            ->leftJoin('student_guardians as sg', function ($join) {
+                $join->on('sg.student_id', '=', 's.id')
+                    ->where('sg.relation', '=', 'father')
+                    ->where('sg.is_primary', '=', 1);
+            })
+            ->leftJoin('guardians as g', 'g.id', '=', 'sg.guardian_id')
+            ->leftJoin('users as p', 'p.id', '=', 's.parent_id')
+            ->where('s.school_id', $school_id)
+            ->where('s.role_id', 7);
 
-        if ($section_id == 'all' || $section_id != "") {
-            $users->where('section_id', $section_id);
+        if ($class_id !== '' && $class_id !== 'all') {
+            $query->where('e.class_id', (int) $class_id);
         }
 
-        if ($class_id == 'all' || $class_id != "") {
-            $users->where('class_id', $class_id);
+        if ($section_id !== '' && $section_id !== 'all') {
+            $query->where('e.section_id', (int) $section_id);
         }
 
-        $students = $users->join('enrollments', 'users.id', '=', 'enrollments.user_id')->select('enrollments.*')->paginate(10);
+        if ($search !== '') {
+            $searchDigits = normalize_id_card_no($search);
+            $query->where(function ($q) use ($search, $searchDigits) {
+                $q->where('s.name', 'LIKE', "%{$search}%")
+                    ->orWhere('s.email', 'LIKE', "%{$search}%")
+                    ->orWhere('g.name', 'LIKE', "%{$search}%")
+                    ->orWhere('g.id_card_no', 'LIKE', "%{$search}%");
+                if ($searchDigits !== '') {
+                    $q->orWhere('g.id_card_no_normalized', 'LIKE', "%{$searchDigits}%");
+                }
+            });
+        }
 
-        $classes = Classes::get()->where('school_id', auth()->user()->school_id);
+        $students = $query->select([
+            'e.*',
+            's.name as student_name',
+            's.email as student_email',
+            's.user_information as student_user_information',
+            's.account_status as student_account_status',
+            'c.name as class_name',
+            'sec.name as section_name',
+            'sw.id as withdrawal_id',
+            'sw.slc_no as withdrawal_slc_no',
+            'sw.withdrawal_date as withdrawal_date',
+            'g.name as guardian_name',
+            'g.id_card_no as guardian_id_card_no',
+            'p.name as legacy_parent_name',
+            'p.user_information as legacy_parent_information',
+        ])->paginate(10)->appends($request->all());
+
+        $classes = Classes::where('school_id', $school_id)->get();
 
         return view('admin.student.student_list', compact('students', 'search', 'classes', 'class_id', 'section_id'));
     }
@@ -1145,7 +1270,7 @@ class AdminController extends Controller
             'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
         $data = $request->all();
-        $code = student_code();
+        $code = generate_student_number((int) auth()->user()->school_id, 'admission');
         if ($request->hasFile('photo')) {
             $data['photo'] = $request->file('photo');
 
@@ -1175,7 +1300,7 @@ class AdminController extends Controller
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
-                'code' => student_code(),
+                'code' => generate_student_number((int) auth()->user()->school_id, 'admission'),
                 'role_id' => '7',
                 'school_id' => auth()->user()->school_id,
                 'user_information' => $data['user_information'],
@@ -1198,7 +1323,95 @@ class AdminController extends Controller
     public function studentProfile($id)
     {
         $student_details = (new CommonController)->get_student_details_by_id($id);
-        return view('admin.student.student_profile', ['student_details' => $student_details]);
+        $withdrawal = StudentWithdrawal::where('school_id', auth()->user()->school_id)
+            ->where('student_id', (int) $id)
+            ->first();
+
+        $createdBy = null;
+        if (!empty($withdrawal) && !empty($withdrawal->created_by)) {
+            $createdBy = User::find($withdrawal->created_by);
+        }
+
+        return view('admin.student.student_profile', [
+            'student_details' => $student_details,
+            'withdrawal' => $withdrawal,
+            'withdrawal_created_by' => $createdBy,
+        ]);
+    }
+
+    /**
+     * Full student profile page (academics, fees, attendance, withdrawal).
+     */
+    public function studentFullProfile($id)
+    {
+        $studentId = (int) $id;
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $student = User::where('id', $studentId)
+            ->where('school_id', $schoolId)
+            ->where('role_id', 7)
+            ->firstOrFail();
+
+        $student_details = (new CommonController)->get_student_details_by_id($studentId);
+
+        $withdrawal = StudentWithdrawal::where('school_id', $schoolId)
+            ->where('student_id', $studentId)
+            ->first();
+
+        // Attendance summary
+        $attendanceBase = DailyAttendances::where('school_id', $schoolId)->where('student_id', $studentId);
+        $attendance = [
+            'overall_present' => (clone $attendanceBase)->where('status', 1)->count(),
+            'overall_absent' => (clone $attendanceBase)->where('status', 0)->count(),
+            'session_present' => (clone $attendanceBase)->where('session_id', $activeSession)->where('status', 1)->count(),
+            'session_absent' => (clone $attendanceBase)->where('session_id', $activeSession)->where('status', 0)->count(),
+        ];
+
+        // Fee summary
+        $feeBase = StudentFeeManager::where('school_id', $schoolId)->where('student_id', $studentId);
+        $fees = [
+            'invoice_count' => (clone $feeBase)->count(),
+            'total_amount' => (int) (clone $feeBase)->sum('total_amount'),
+            'paid_amount' => (int) (clone $feeBase)->sum('paid_amount'),
+        ];
+        $fees['due_amount'] = max(0, $fees['total_amount'] - $fees['paid_amount']);
+        $recent_invoices = (clone $feeBase)->orderByDesc('id')->limit(10)->get();
+
+        // Academics (gradebook)
+        $gradebookRows = Gradebook::where('school_id', $schoolId)
+            ->where('student_id', $studentId)
+            ->orderByDesc('timestamp')
+            ->limit(30)
+            ->get();
+
+        $examCategoryNames = ExamCategory::where('school_id', $schoolId)->pluck('name', 'id')->toArray();
+        $sessionNames = Session::where('school_id', $schoolId)->pluck('session_title', 'id')->toArray();
+
+        $subjectIds = [];
+        foreach ($gradebookRows as $row) {
+            $m = json_decode((string) $row->marks, true);
+            if (is_array($m)) {
+                $subjectIds = array_merge($subjectIds, array_keys($m));
+            }
+        }
+        $subjectIds = array_values(array_unique(array_map('intval', $subjectIds)));
+        $subjectNames = !empty($subjectIds)
+            ? Subject::whereIn('id', $subjectIds)->pluck('name', 'id')->toArray()
+            : [];
+
+        return view('admin.student.full_profile', compact(
+            'student',
+            'student_details',
+            'withdrawal',
+            'attendance',
+            'fees',
+            'recent_invoices',
+            'gradebookRows',
+            'examCategoryNames',
+            'sessionNames',
+            'subjectNames'
+        ));
     }
 
     public function studentEditModal($id)
@@ -1290,6 +1503,181 @@ class AdminController extends Controller
         return redirect()->back()->with('message', 'Student removed successfully.');
     }
 
+    /**
+     * Student withdrawals list (SLC records).
+     */
+    public function studentWithdrawalsList(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $search = (string) ($request->input('search') ?? '');
+
+        $query = DB::table('student_withdrawals as sw')
+            ->join('users as s', 's.id', '=', 'sw.student_id')
+            ->leftJoin('classes as c', 'c.id', '=', 'sw.class_id')
+            ->leftJoin('sections as sec', 'sec.id', '=', 'sw.section_id')
+            ->where('sw.school_id', $schoolId)
+            ->orderByDesc('sw.id');
+
+        if ($search !== '') {
+            $digits = normalize_id_card_no($search);
+            $query->where(function ($q) use ($search, $digits) {
+                $q->where('s.name', 'LIKE', "%{$search}%")
+                    ->orWhere('s.email', 'LIKE', "%{$search}%")
+                    ->orWhere('sw.slc_no', 'LIKE', "%{$search}%")
+                    ->orWhere('sw.admission_no', 'LIKE', "%{$search}%")
+                    ->orWhere('sw.enrollment_no', 'LIKE', "%{$search}%")
+                    ->orWhere('sw.father_name', 'LIKE', "%{$search}%")
+                    ->orWhere('sw.father_cnic', 'LIKE', "%{$search}%");
+                if ($digits !== '') {
+                    $q->orWhere('sw.father_cnic', 'LIKE', "%{$digits}%");
+                }
+            });
+        }
+
+        $withdrawals = $query->select([
+            'sw.*',
+            's.name as student_name',
+            's.email as student_email',
+            'c.name as class_name',
+            'sec.name as section_name',
+        ])->paginate(15)->appends($request->all());
+
+        return view('admin.student_withdrawals.index', compact('withdrawals', 'search'));
+    }
+
+    /**
+     * Withdraw modal for a student (create SLC record).
+     */
+    public function studentWithdrawalModal($id)
+    {
+        $studentId = (int) $id;
+        $schoolId = (int) auth()->user()->school_id;
+
+        $student = User::where('id', $studentId)
+            ->where('school_id', $schoolId)
+            ->where('role_id', 7)
+            ->firstOrFail();
+
+        $existing = StudentWithdrawal::where('school_id', $schoolId)->where('student_id', $studentId)->first();
+
+        $studentDetails = (new CommonController)->get_student_details_by_id($studentId);
+
+        // IMPORTANT: Don't increment sequences just by opening the modal.
+        // We show a preview using (last_seq + 1) without updating the counter.
+        $defaultSlcNo = '';
+        if (empty($existing)) {
+            $pattern = (string) (DB::table('schools')->where('id', $schoolId)->value('slc_number_pattern') ?? '');
+            if ($pattern === '') {
+                $pattern = 'SLC-{YYYY}-{SEQ:4}';
+            }
+
+            $year = (int) date('Y');
+            $yy = substr((string) $year, -2);
+            $mm = date('m');
+
+            $last = (int) (DB::table('student_number_sequences')
+                ->where('school_id', $schoolId)
+                ->where('type', 'slc')
+                ->where('year', $year)
+                ->value('last_seq') ?? 0);
+            $next = $last + 1;
+
+            $pad = 4;
+            if (preg_match('/\{SEQ:(\d{1,2})\}/', $pattern, $m)) {
+                $n = (int) $m[1];
+                $pad = ($n >= 1 && $n <= 12) ? $n : 4;
+            }
+            $seq = str_pad((string) $next, $pad, '0', STR_PAD_LEFT);
+            $out = str_replace(['{YYYY}', '{YY}', '{MM}'], [(string) $year, (string) $yy, (string) $mm], $pattern);
+            $defaultSlcNo = preg_replace('/\{SEQ:\d{1,2}\}/', $seq, $out, 1);
+        }
+
+        return view('admin.student_withdrawals.withdrawal_modal', compact('student', 'studentDetails', 'existing', 'defaultSlcNo'));
+    }
+
+    /**
+     * Store withdrawal + disable account.
+     */
+    public function studentWithdrawalStore(Request $request, $id)
+    {
+        $studentId = (int) $id;
+        $schoolId = (int) auth()->user()->school_id;
+
+        $student = User::where('id', $studentId)
+            ->where('school_id', $schoolId)
+            ->where('role_id', 7)
+            ->firstOrFail();
+
+        $existing = StudentWithdrawal::where('school_id', $schoolId)->where('student_id', $studentId)->first();
+        if (!empty($existing)) {
+            return redirect()->back()->with('error', 'This student is already withdrawn.');
+        }
+
+        $validated = $request->validate([
+            'slc_no' => ['nullable', 'string', 'max:50'],
+            'withdrawal_date' => ['required', 'date'],
+            'slc_issue_date' => ['nullable', 'date'],
+            'reason' => ['nullable', 'string', 'max:2000'],
+            'remarks' => ['nullable', 'string', 'max:2000'],
+            'dues_cleared' => ['nullable'],
+        ]);
+
+        $enrol = Enrollment::where('user_id', $studentId)->first();
+        $studentDetails = (new CommonController)->get_student_details_by_id($studentId);
+
+        $slcNo = trim((string) ($validated['slc_no'] ?? ''));
+        if ($slcNo === '') {
+            $slcNo = generate_student_number($schoolId, 'slc');
+        }
+        $existsSlcNo = StudentWithdrawal::where('school_id', $schoolId)->where('slc_no', $slcNo)->exists();
+        if ($existsSlcNo) {
+            return redirect()->back()->with('error', 'SLC number already exists. Please try again.');
+        }
+
+        StudentWithdrawal::create([
+            'school_id' => $schoolId,
+            'student_id' => $studentId,
+            'enrollment_id' => $enrol->id ?? null,
+            'class_id' => $enrol->class_id ?? null,
+            'section_id' => $enrol->section_id ?? null,
+            'session_id' => $enrol->session_id ?? null,
+            'admission_no' => $studentDetails['admission_no'] ?? ($student->code ?? null),
+            'enrollment_no' => $studentDetails['enrollment_no'] ?? null,
+            'father_name' => $studentDetails['father_name'] ?? null,
+            'father_cnic' => $studentDetails['parent_id_card'] ?? null,
+            'slc_no' => $slcNo,
+            'withdrawal_date' => $validated['withdrawal_date'],
+            'slc_issue_date' => $validated['slc_issue_date'] ?? null,
+            'reason' => $validated['reason'] ?? null,
+            'remarks' => $validated['remarks'] ?? null,
+            'dues_cleared' => !empty($request->input('dues_cleared')) ? 1 : 0,
+            'created_by' => auth()->id(),
+        ]);
+
+        // Disable student account after withdrawal
+        User::where('id', $studentId)->update(['account_status' => 'disable']);
+
+        return redirect()->back()->with('message', 'Student withdrawn and SLC record created successfully.');
+    }
+
+    /**
+     * Print SLC certificate.
+     */
+    public function studentWithdrawalPrint($id)
+    {
+        $withdrawalId = (int) $id;
+        $schoolId = (int) auth()->user()->school_id;
+
+        $withdrawal = StudentWithdrawal::where('id', $withdrawalId)
+            ->where('school_id', $schoolId)
+            ->firstOrFail();
+
+        $student = User::find($withdrawal->student_id);
+        $school = School::find($schoolId);
+
+        return view('admin.student_withdrawals.slc_print', compact('withdrawal', 'student', 'school'));
+    }
+
 
     /**
      * Show the teacher permission form.
@@ -1364,7 +1752,7 @@ class AdminController extends Controller
      */
     public function offlineAdmissionForm($type = '')
     {
-        $data['parents'] = User::where(['role_id' => 6, 'school_id' => 1])->get();
+        $data['parents'] = User::where(['role_id' => 6, 'school_id' => auth()->user()->school_id])->get();
         $data['departments'] = Department::get()->where('school_id', auth()->user()->school_id);
         $data['classes'] = Classes::get()->where('school_id', auth()->user()->school_id);
         return view('admin.offline_admission.offline_admission', ['aria_expand' => $type, 'data' => $data]);
@@ -1407,20 +1795,24 @@ class AdminController extends Controller
                 'birthday' => strtotime($data['eDefaultDateRange']),
                 'phone' => $data['phone'],
                 'address' => $data['address'],
-                'photo' => $photo
+                'photo' => $photo,
+                'father_name' => $data['father_name'] ?? '',
+                'parent_id_card' => $data['parent_id_card'] ?? ''
             );
             $data['user_information'] = json_encode($info);
 
             $duplicate_user_check = User::get()->where('email', $data['email']);
 
             if (count($duplicate_user_check) == 0) {
+                $parent_id = $data['parent_id'] ?? null;
 
                 $user = User::create([
                     'name' => $data['name'],
                     'email' => $data['email'],
                     'password' => Hash::make($data['password']),
-                    'code' => student_code(),
+                    'code' => generate_student_number((int) auth()->user()->school_id, 'admission'),
                     'role_id' => '7',
+                    'parent_id' => $parent_id,
                     'school_id' => auth()->user()->school_id,
                     'user_information' => $data['user_information'],
                     'status' => 1,
@@ -1428,11 +1820,65 @@ class AdminController extends Controller
 
                 Enrollment::create([
                     'user_id' => $user->id,
+                    'enrollment_no' => generate_student_number((int) auth()->user()->school_id, 'enrollment'),
                     'class_id' => $data['class_id'],
                     'section_id' => $data['section_id'],
                     'school_id' => auth()->user()->school_id,
                     'session_id' => $active_session,
                 ]);
+
+                // Guardian identity (track family by CNIC + name)
+                $parent_id_card = (string) ($data['parent_id_card'] ?? '');
+                $father_name = (string) ($data['father_name'] ?? '');
+                if ($parent_id_card !== '' && !is_valid_id_card_no($parent_id_card)) {
+                    return redirect()->back()->with('error', 'Parent ID card number must be exactly 13 digits.');
+                }
+                $school_id = (int) auth()->user()->school_id;
+
+                $normalized = normalize_id_card_no($parent_id_card);
+                $guardian = null;
+
+                if ($normalized !== '') {
+                    $guardian = Guardian::where('school_id', $school_id)
+                        ->where('id_card_no_normalized', $normalized)
+                        ->first();
+                } elseif (!empty($parent_id)) {
+                    $guardian = Guardian::where('school_id', $school_id)
+                        ->where('user_id', $parent_id)
+                        ->first();
+                }
+
+                if (empty($guardian)) {
+                    $guardian = Guardian::create([
+                        'school_id' => $school_id,
+                        'user_id' => $parent_id,
+                        'name' => $father_name !== '' ? $father_name : null,
+                        'id_card_no' => $parent_id_card !== '' ? $parent_id_card : null,
+                        'id_card_no_normalized' => $normalized !== '' ? $normalized : null,
+                    ]);
+                } else {
+                    $updates = [];
+                    if (empty($guardian->user_id) && !empty($parent_id)) {
+                        $updates['user_id'] = $parent_id;
+                    }
+                    if ((empty($guardian->name) || $guardian->name === null) && $father_name !== '') {
+                        $updates['name'] = $father_name;
+                    }
+                    if ((empty($guardian->id_card_no) || $guardian->id_card_no === null) && $parent_id_card !== '') {
+                        $updates['id_card_no'] = $parent_id_card;
+                    }
+                    if ((empty($guardian->id_card_no_normalized) || $guardian->id_card_no_normalized === null) && $normalized !== '') {
+                        $updates['id_card_no_normalized'] = $normalized;
+                    }
+                    if (!empty($updates)) {
+                        Guardian::where('id', $guardian->id)->update($updates);
+                    }
+                }
+
+                StudentGuardian::firstOrCreate(
+                    ['student_id' => $user->id, 'guardian_id' => $guardian->id, 'relation' => 'father'],
+                    ['is_primary' => 1, 'is_fee_payer' => 1]
+                );
 
                 if (!empty(get_settings('smtp_user')) && (get_settings('smtp_pass')) && (get_settings('smtp_host')) && (get_settings('smtp_port'))) {
                     Mail::to($data['email'])->send(new NewUserEmail($data));
@@ -1461,6 +1907,8 @@ class AdminController extends Controller
         $students_password = $data['password'];
         $students_gender = $data['gender'];
         $students_parent = $data['parent_id'];
+        $students_father_name = $data['father_name'] ?? [];
+        $students_parent_id_card = $data['parent_id_card'] ?? [];
 
         $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
 
@@ -1468,6 +1916,15 @@ class AdminController extends Controller
             $duplicate_user_check = User::get()->where('email', $students_email[$key]);
 
             if (count($duplicate_user_check) == 0) {
+                $father_name = $students_father_name[$key] ?? '';
+                $parent_id_card = $students_parent_id_card[$key] ?? '';
+                $parent_id = $students_parent[$key] ?? null;
+
+                if ($parent_id_card !== '' && !is_valid_id_card_no($parent_id_card)) {
+                    // Skip this row but keep processing others
+                    $duplication_counter++;
+                    continue;
+                }
 
                 $info = array(
                     'gender' => $students_gender[$key],
@@ -1475,7 +1932,9 @@ class AdminController extends Controller
                     'birthday' => '',
                     'phone' => '',
                     'address' => '',
-                    'photo' => ''
+                    'photo' => '',
+                    'father_name' => $father_name,
+                    'parent_id_card' => $parent_id_card
                 );
                 $data['user_information'] = json_encode($info);
 
@@ -1483,17 +1942,65 @@ class AdminController extends Controller
                     'name' => $students_name[$key],
                     'email' => $students_email[$key],
                     'password' => Hash::make($students_password[$key]),
-                    'code' => student_code(),
+                    'code' => generate_student_number((int) auth()->user()->school_id, 'admission'),
                     'role_id' => '7',
-                    'parent_id' => $students_parent[$key],
+                    'parent_id' => $parent_id,
                     'school_id' => auth()->user()->school_id,
                     'user_information' => $data['user_information'],
                     'status' => 1,
                 ]);
 
+                // Guardian identity (track family by CNIC + name)
+                $school_id = (int) auth()->user()->school_id;
+                $normalized = normalize_id_card_no($parent_id_card);
+                $guardian = null;
+
+                if ($normalized !== '') {
+                    $guardian = Guardian::where('school_id', $school_id)
+                        ->where('id_card_no_normalized', $normalized)
+                        ->first();
+                } elseif (!empty($parent_id)) {
+                    $guardian = Guardian::where('school_id', $school_id)
+                        ->where('user_id', $parent_id)
+                        ->first();
+                }
+
+                if (empty($guardian)) {
+                    $guardian = Guardian::create([
+                        'school_id' => $school_id,
+                        'user_id' => $parent_id,
+                        'name' => $father_name !== '' ? $father_name : null,
+                        'id_card_no' => $parent_id_card !== '' ? $parent_id_card : null,
+                        'id_card_no_normalized' => $normalized !== '' ? $normalized : null,
+                    ]);
+                } else {
+                    $updates = [];
+                    if (empty($guardian->user_id) && !empty($parent_id)) {
+                        $updates['user_id'] = $parent_id;
+                    }
+                    if ((empty($guardian->name) || $guardian->name === null) && $father_name !== '') {
+                        $updates['name'] = $father_name;
+                    }
+                    if ((empty($guardian->id_card_no) || $guardian->id_card_no === null) && $parent_id_card !== '') {
+                        $updates['id_card_no'] = $parent_id_card;
+                    }
+                    if ((empty($guardian->id_card_no_normalized) || $guardian->id_card_no_normalized === null) && $normalized !== '') {
+                        $updates['id_card_no_normalized'] = $normalized;
+                    }
+                    if (!empty($updates)) {
+                        Guardian::where('id', $guardian->id)->update($updates);
+                    }
+                }
+
+                StudentGuardian::firstOrCreate(
+                    ['student_id' => $user->id, 'guardian_id' => $guardian->id, 'relation' => 'father'],
+                    ['is_primary' => 1, 'is_fee_payer' => 1]
+                );
+
 
                 Enrollment::create([
                     'user_id' => $user->id,
+                    'enrollment_no' => generate_student_number((int) auth()->user()->school_id, 'enrollment'),
                     'class_id' => $class_id,
                     'section_id' => $section_id,
                     'school_id' => auth()->user()->school_id,
@@ -1544,6 +2051,7 @@ class AdminController extends Controller
         if (($handle = fopen($filepath, 'r')) !== FALSE) { // Check the resource is valid
             $count = 0;
             $duplication_counter = 0;
+            $invalid_id_card_counter = 0;
 
             while (($all_data = fgetcsv($handle, 1000, ",")) !== FALSE) { // Check opening the file is OK!
                 if ($student_limit == 'unlimited' || $student_limit > $student_count) {
@@ -1552,6 +2060,26 @@ class AdminController extends Controller
                         $duplicate_user_check = User::get()->where('email', $all_data[1]);
 
                         if (count($duplicate_user_check) == 0) {
+                            $father_name = $all_data[8] ?? '';
+                            $parent_id_card = $all_data[9] ?? '';
+                            $parent_id = $all_data[10] ?? null;
+
+                            if ($parent_id_card !== '' && !is_valid_id_card_no($parent_id_card)) {
+                                $invalid_id_card_counter++;
+                                $count++;
+                                continue;
+                            }
+
+                            if ($parent_id === '') {
+                                $parent_id = null;
+                            }
+
+                            if (empty($parent_id) && !empty($parent_id_card)) {
+                                $parent_id = User::where('role_id', 6)
+                                    ->where('school_id', $school_id)
+                                    ->where('user_information', 'like', '%"id_card_no":"' . addslashes((string) $parent_id_card) . '"%')
+                                    ->value('id');
+                            }
 
                             $info = array(
                                 'gender' => $all_data[5],
@@ -1559,7 +2087,9 @@ class AdminController extends Controller
                                 'birthday' => strtotime($all_data[6]),
                                 'phone' => $all_data[3],
                                 'address' => $all_data[7],
-                                'photo' => ''
+                                'photo' => '',
+                                'father_name' => $father_name,
+                                'parent_id_card' => $parent_id_card
                             );
 
                             $data['user_information'] = json_encode($info);
@@ -1568,16 +2098,64 @@ class AdminController extends Controller
                                 'name' => $all_data[0],
                                 'email' => $all_data[1],
                                 'password' => Hash::make($all_data[2]),
-                                'code' => student_code(),
+                                'code' => generate_student_number((int) auth()->user()->school_id, 'admission'),
                                 'role_id' => '7',
                                 'school_id' => $school_id,
+                                'parent_id' => $parent_id,
                                 'user_information' => $data['user_information'],
                                 'status' => 1,
                             ]);
 
+                            // Guardian identity (track family by CNIC + name)
+                            $normalized = normalize_id_card_no($parent_id_card);
+                            $guardian = null;
+
+                            if ($normalized !== '') {
+                                $guardian = Guardian::where('school_id', $school_id)
+                                    ->where('id_card_no_normalized', $normalized)
+                                    ->first();
+                            } elseif (!empty($parent_id)) {
+                                $guardian = Guardian::where('school_id', $school_id)
+                                    ->where('user_id', $parent_id)
+                                    ->first();
+                            }
+
+                            if (empty($guardian)) {
+                                $guardian = Guardian::create([
+                                    'school_id' => $school_id,
+                                    'user_id' => $parent_id,
+                                    'name' => $father_name !== '' ? $father_name : null,
+                                    'id_card_no' => $parent_id_card !== '' ? $parent_id_card : null,
+                                    'id_card_no_normalized' => $normalized !== '' ? $normalized : null,
+                                ]);
+                            } else {
+                                $updates = [];
+                                if (empty($guardian->user_id) && !empty($parent_id)) {
+                                    $updates['user_id'] = $parent_id;
+                                }
+                                if ((empty($guardian->name) || $guardian->name === null) && $father_name !== '') {
+                                    $updates['name'] = $father_name;
+                                }
+                                if ((empty($guardian->id_card_no) || $guardian->id_card_no === null) && $parent_id_card !== '') {
+                                    $updates['id_card_no'] = $parent_id_card;
+                                }
+                                if ((empty($guardian->id_card_no_normalized) || $guardian->id_card_no_normalized === null) && $normalized !== '') {
+                                    $updates['id_card_no_normalized'] = $normalized;
+                                }
+                                if (!empty($updates)) {
+                                    Guardian::where('id', $guardian->id)->update($updates);
+                                }
+                            }
+
+                            StudentGuardian::firstOrCreate(
+                                ['student_id' => $user->id, 'guardian_id' => $guardian->id, 'relation' => 'father'],
+                                ['is_primary' => 1, 'is_fee_payer' => 1]
+                            );
+
 
                             Enrollment::create([
                                 'user_id' => $user->id,
+                                'enrollment_no' => generate_student_number((int) auth()->user()->school_id, 'enrollment'),
                                 'class_id' => $class_id,
                                 'section_id' => $section_id,
                                 'school_id' => $school_id,
@@ -1597,6 +2175,10 @@ class AdminController extends Controller
             }
 
             fclose($handle);
+        }
+
+        if ($invalid_id_card_counter > 0) {
+            return redirect()->back()->with('warning', 'Some rows were skipped due to invalid parent ID card number (must be 13 digits).');
         }
 
         if ($duplication_counter > 0) {
@@ -2962,10 +3544,18 @@ class AdminController extends Controller
     public function feeManagerCreate(Request $request, $value = "")
     {
         $data = $request->all();
-        $data['total_amount'] = $data['total_amount'];
         if ($value == 'single') {
 
-            if ($data['paid_amount'] > $data['total_amount']) {
+            $baseAmount = (int) ($data['amount'] ?? ($data['total_amount'] ?? 0));
+            $discount = (int) ($data['discounted_price'] ?? 0);
+            $discount = max(0, min($baseAmount, $discount));
+            $total = max(0, $baseAmount - $discount);
+
+            $data['amount'] = $baseAmount;
+            $data['discounted_price'] = $discount;
+            $data['total_amount'] = $total;
+
+            if ((int) ($data['paid_amount'] ?? 0) > $data['total_amount']) {
 
                 return back()->with('error', 'Paid amount can not get bigger than total amount');
             }
@@ -2978,6 +3568,10 @@ class AdminController extends Controller
             $parent_id = User::find($data['student_id'])->toArray();
             $parent_id = $parent_id['parent_id'];
             $data['parent_id'] = $parent_id;
+            $data['guardian_id'] = StudentGuardian::where('student_id', $data['student_id'])
+                ->orderByDesc('is_fee_payer')
+                ->orderByDesc('is_primary')
+                ->value('guardian_id');
 
             $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
 
@@ -2991,7 +3585,13 @@ class AdminController extends Controller
             return redirect()->back()->with('message', 'You have successfully create a new invoice.');
         } else if ($value == 'mass') {
 
-            if ($data['paid_amount'] > $data['total_amount']) {
+            $total = (int) ($data['total_amount'] ?? 0);
+            $data['amount'] = $total;
+            $data['discounted_price'] = (int) ($data['discounted_price'] ?? 0);
+            $data['discounted_price'] = 0;
+            $data['total_amount'] = $total;
+
+            if ((int) ($data['paid_amount'] ?? 0) > $data['total_amount']) {
 
                 return back()->with('error', 'Paid amount can not get bigger than total amount');
             }
@@ -3018,7 +3618,10 @@ class AdminController extends Controller
                 $parent_id = User::find($data['student_id'])->toArray();
                 $parent_id = $parent_id['parent_id'];
                 $data['parent_id'] = $parent_id;
-                $data['amount'] = $data['total_amount'];
+                $data['guardian_id'] = StudentGuardian::where('student_id', $data['student_id'])
+                    ->orderByDesc('is_fee_payer')
+                    ->orderByDesc('is_primary')
+                    ->value('guardian_id');
                 StudentFeeManager::create($data);
             }
 
@@ -3069,7 +3672,16 @@ class AdminController extends Controller
         /*GET THE PREVIOUS INVOICE DETAILS FOR GETTING THE PAID AMOUNT*/
         $previous_invoice_data = StudentFeeManager::find($id);
 
-        if ($data['paid_amount'] > $data['total_amount']) {
+        $baseAmount = (int) ($data['amount'] ?? ($data['total_amount'] ?? 0));
+        $discount = (int) ($data['discounted_price'] ?? 0);
+        $discount = max(0, min($baseAmount, $discount));
+        $total = max(0, $baseAmount - $discount);
+
+        $data['amount'] = $baseAmount;
+        $data['discounted_price'] = $discount;
+        $data['total_amount'] = $total;
+
+        if ((int) ($data['paid_amount'] ?? 0) > $data['total_amount']) {
 
             return redirect()->back()->with('error', 'Paid amount can not get bigger than total amount');
         }
@@ -3091,6 +3703,8 @@ class AdminController extends Controller
             'total_amount' => $data['total_amount'],
             'class_id' => $data['class_id'],
             'student_id' => $data['student_id'],
+            'amount' => $data['amount'],
+            'discounted_price' => $data['discounted_price'],
             'paid_amount' => $data['paid_amount'],
             'payment_method' => $data['payment_method'],
             'timestamp' => $timestamp,
@@ -3107,6 +3721,1008 @@ class AdminController extends Controller
         $invoice = StudentFeeManager::find($id);
         $invoice->delete();
         return redirect()->back()->with('message', 'You have successfully delete invoice.');
+    }
+
+    /**
+     * Fee setup: Class fees (base amount per class/section for current session).
+     */
+    public function classFees()
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $classes = Classes::where('school_id', $schoolId)->get();
+        $fees = ClassFeeStructure::where('school_id', $schoolId)
+            ->where('session_id', $activeSession)
+            ->orderByDesc('id')
+            ->get();
+
+        return view('admin.fees.class_fees', compact('classes', 'fees', 'activeSession'));
+    }
+
+    public function classFeesStore(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $data = $request->validate([
+            'class_id' => ['required', 'integer'],
+            'section_id' => ['nullable', 'integer'],
+            'title' => ['nullable', 'string', 'max:100'],
+            'amount' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            $title = 'Monthly Fee';
+        }
+
+        ClassFeeStructure::updateOrCreate(
+            [
+                'school_id' => $schoolId,
+                'session_id' => $activeSession,
+                'class_id' => (int) $data['class_id'],
+                'section_id' => !empty($data['section_id']) ? (int) $data['section_id'] : null,
+            ],
+            [
+                'title' => $title,
+                'amount' => (int) $data['amount'],
+            ]
+        );
+
+        return redirect()->back()->with('message', 'Class fee saved successfully.');
+    }
+
+    /**
+     * Fee setup: Scholarships/discounts (concessions) for students or families (guardian).
+     */
+    public function feeConcessions()
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+        $classes = Classes::where('school_id', $schoolId)->get();
+
+        $concessions = FeeConcession::where('school_id', $schoolId)
+            ->orderByDesc('id')
+            ->limit(200)
+            ->get();
+
+        $studentIds = $concessions->pluck('student_id')->filter()->unique()->values()->all();
+        $guardianIds = $concessions->pluck('guardian_id')->filter()->unique()->values()->all();
+
+        $studentsById = collect();
+        if (!empty($studentIds)) {
+            $studentsById = \App\Models\User::whereIn('id', $studentIds)
+                ->select(['id', 'name'])
+                ->get()
+                ->keyBy('id');
+        }
+
+        $guardiansById = collect();
+        if (!empty($guardianIds)) {
+            $guardiansById = \App\Models\Guardian::where('school_id', $schoolId)
+                ->whereIn('id', $guardianIds)
+                ->select(['id', 'name', 'id_card_no'])
+                ->get()
+                ->keyBy('id');
+        }
+
+        // Latest known class/section per student (fallback if concessions are session-specific).
+        $enrollmentByStudentId = [];
+        if (!empty($studentIds)) {
+            $enrollments = \Illuminate\Support\Facades\DB::table('enrollments as e')
+                ->leftJoin('classes as c', 'c.id', '=', 'e.class_id')
+                ->leftJoin('sections as sec', 'sec.id', '=', 'e.section_id')
+                ->where('e.school_id', $schoolId)
+                ->whereIn('e.user_id', $studentIds)
+                ->orderByDesc('e.id')
+                ->select([
+                    'e.user_id',
+                    'c.name as class_name',
+                    'sec.name as section_name',
+                ])
+                ->get();
+
+            foreach ($enrollments as $row) {
+                $sid = (int) ($row->user_id ?? 0);
+                if ($sid <= 0 || isset($enrollmentByStudentId[$sid])) {
+                    continue;
+                }
+                $enrollmentByStudentId[$sid] = [
+                    'class_name' => (string) ($row->class_name ?? ''),
+                    'section_name' => (string) ($row->section_name ?? ''),
+                ];
+            }
+        }
+
+        return view('admin.fees.concessions', compact('classes', 'concessions', 'activeSession', 'studentsById', 'guardiansById', 'enrollmentByStudentId'));
+    }
+
+    public function feeConcessionsStore(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $data = $request->validate([
+            'scope_type' => ['required', 'string'], // student|guardian
+            'student_id' => ['nullable', 'integer'],
+            'guardian_id' => ['nullable', 'integer'],
+            'guardian_cnic' => ['nullable', 'string', 'max:30'],
+            'mode' => ['required', 'string'], // percent|fixed
+            'value' => ['required', 'integer', 'min:0'],
+            'session_id' => ['nullable', 'integer'],
+            'note' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable'],
+        ]);
+
+        $scope = strtolower(trim((string) $data['scope_type']));
+        $mode = strtolower(trim((string) $data['mode']));
+        if (!in_array($scope, ['student', 'guardian'], true)) {
+            return redirect()->back()->with('error', 'Invalid scope type.');
+        }
+        if (!in_array($mode, ['percent', 'fixed'], true)) {
+            return redirect()->back()->with('error', 'Invalid discount mode.');
+        }
+
+        $studentId = null;
+        $guardianId = null;
+
+        if ($scope === 'student') {
+            $studentId = (int) ($data['student_id'] ?? 0);
+            if ($studentId <= 0) {
+                return redirect()->back()->with('error', 'Please select a student.');
+            }
+
+            $guardianId = StudentGuardian::where('student_id', $studentId)
+                ->orderByDesc('is_fee_payer')
+                ->orderByDesc('is_primary')
+                ->value('guardian_id');
+        } else {
+            $guardianId = !empty($data['guardian_id']) ? (int) $data['guardian_id'] : null;
+            if (empty($guardianId)) {
+                $cnic = normalize_id_card_no((string) ($data['guardian_cnic'] ?? ''));
+                if ($cnic === '' || strlen($cnic) !== 13) {
+                    return redirect()->back()->with('error', 'Please enter a valid 13-digit Father CNIC.');
+                }
+                $guardianId = Guardian::where('school_id', $schoolId)
+                    ->where('id_card_no_normalized', $cnic)
+                    ->value('id');
+            } else {
+                $guardianId = Guardian::where('school_id', $schoolId)->where('id', $guardianId)->value('id');
+            }
+            if (empty($guardianId)) {
+                return redirect()->back()->with('error', 'Guardian not found for this CNIC.');
+            }
+        }
+
+        if ($mode === 'percent' && (int) $data['value'] > 100) {
+            return redirect()->back()->with('error', 'Percent discount cannot exceed 100.');
+        }
+
+        FeeConcession::create([
+            'school_id' => $schoolId,
+            'session_id' => !empty($data['session_id']) ? (int) $data['session_id'] : null,
+            'scope_type' => $scope,
+            'student_id' => $studentId,
+            'guardian_id' => $guardianId,
+            'mode' => $mode,
+            'value' => (int) $data['value'],
+            'is_active' => !empty($request->input('is_active')) ? 1 : 0,
+            'note' => $data['note'] ?? null,
+        ]);
+
+        return redirect()->back()->with('message', 'Discount/Scholarship saved successfully.');
+    }
+
+    /**
+     * Fee setup: sibling discounts (youngest child logic).
+     */
+    public function feeSiblingDiscounts()
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $rules = FeeSiblingDiscount::where('school_id', $schoolId)
+            ->orderByDesc('id')
+            ->limit(200)
+            ->get();
+
+        $guardianIds = $rules->pluck('guardian_id')->filter()->unique()->values()->all();
+        $guardiansById = collect();
+        if (!empty($guardianIds)) {
+            $guardiansById = \App\Models\Guardian::where('school_id', $schoolId)
+                ->whereIn('id', $guardianIds)
+                ->select(['id', 'name', 'id_card_no'])
+                ->get()
+                ->keyBy('id');
+        }
+
+        return view('admin.fees.sibling_discounts', compact('rules', 'activeSession', 'guardiansById'));
+    }
+
+    public function feeSiblingDiscountsStore(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $data = $request->validate([
+            'basis' => ['required', 'string'], // dob|class|hybrid
+            'min_children' => ['required', 'integer', 'min:1', 'max:10'],
+            'mode' => ['required', 'string'], // percent|fixed
+            'value' => ['required', 'integer', 'min:0'],
+            'session_id' => ['nullable', 'integer'],
+            'guardian_id' => ['nullable', 'integer'],
+            'guardian_cnic' => ['nullable', 'string', 'max:30'],
+            'note' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable'],
+        ]);
+
+        $basis = strtolower(trim((string) $data['basis']));
+        if (!in_array($basis, ['dob', 'class', 'hybrid'], true)) {
+            return redirect()->back()->with('error', 'Invalid basis.');
+        }
+
+        $mode = strtolower(trim((string) $data['mode']));
+        if (!in_array($mode, ['percent', 'fixed'], true)) {
+            return redirect()->back()->with('error', 'Invalid mode.');
+        }
+
+        if ($mode === 'percent' && (int) $data['value'] > 100) {
+            return redirect()->back()->with('error', 'Percent discount cannot exceed 100.');
+        }
+
+        $guardianId = !empty($data['guardian_id']) ? (int) $data['guardian_id'] : null;
+        if (!empty($guardianId)) {
+            $guardianId = Guardian::where('school_id', $schoolId)->where('id', $guardianId)->value('id');
+            if (empty($guardianId)) {
+                return redirect()->back()->with('error', 'Guardian not found.');
+            }
+        } else {
+            $cnic = normalize_id_card_no((string) ($data['guardian_cnic'] ?? ''));
+            if ($cnic !== '') {
+                if (strlen($cnic) !== 13) {
+                    return redirect()->back()->with('error', 'Father CNIC must be 13 digits.');
+                }
+                $guardianId = Guardian::where('school_id', $schoolId)
+                    ->where('id_card_no_normalized', $cnic)
+                    ->value('id');
+                if (empty($guardianId)) {
+                    return redirect()->back()->with('error', 'Guardian not found for this CNIC.');
+                }
+            }
+        }
+
+        FeeSiblingDiscount::create([
+            'school_id' => $schoolId,
+            'session_id' => !empty($data['session_id']) ? (int) $data['session_id'] : null,
+            'guardian_id' => $guardianId,
+            'basis' => $basis,
+            'min_children' => (int) $data['min_children'],
+            'mode' => $mode,
+            'value' => (int) $data['value'],
+            'is_active' => !empty($request->input('is_active')) ? 1 : 0,
+            'note' => $data['note'] ?? null,
+        ]);
+
+        return redirect()->back()->with('message', 'Sibling discount rule saved successfully.');
+    }
+
+    /**
+     * Select2 search: students (name/email/father/CNIC) with class/section.
+     */
+    public function feeSearchStudents(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $q = trim((string) $request->get('q', ''));
+        $limit = 20;
+
+        $query = DB::table('enrollments as e')
+            ->join('users as s', 's.id', '=', 'e.user_id')
+            ->leftJoin('classes as c', 'c.id', '=', 'e.class_id')
+            ->leftJoin('sections as sec', 'sec.id', '=', 'e.section_id')
+            ->leftJoin('student_guardians as sg', function ($join) {
+                $join->on('sg.student_id', '=', 's.id')
+                    ->where('sg.relation', '=', 'father')
+                    ->where('sg.is_primary', '=', 1);
+            })
+            ->leftJoin('guardians as g', 'g.id', '=', 'sg.guardian_id')
+            ->where('s.school_id', $schoolId)
+            ->where('s.role_id', 7);
+
+        if ($q !== '') {
+            $digits = normalize_id_card_no($q);
+            $query->where(function ($w) use ($q, $digits) {
+                $w->where('s.name', 'LIKE', "%{$q}%")
+                    ->orWhere('s.email', 'LIKE', "%{$q}%")
+                    ->orWhere('c.name', 'LIKE', "%{$q}%")
+                    ->orWhere('sec.name', 'LIKE', "%{$q}%")
+                    ->orWhere('g.name', 'LIKE', "%{$q}%")
+                    ->orWhere('g.id_card_no', 'LIKE', "%{$q}%");
+                if ($digits !== '') {
+                    $w->orWhere('g.id_card_no_normalized', 'LIKE', "%{$digits}%");
+                }
+            });
+        }
+
+        $rows = $query->select([
+            's.id as student_id',
+            's.name as student_name',
+            'c.name as class_name',
+            'sec.name as section_name',
+            'g.name as father_name',
+            'g.id_card_no as father_cnic',
+        ])->orderBy('s.name')->limit($limit)->get();
+
+        $results = [];
+        foreach ($rows as $r) {
+            $text = trim(($r->student_name ?? '') . ' — ' . ($r->class_name ?? '') . ' ' . ($r->section_name ?? ''));
+            $father = trim((string) ($r->father_name ?? ''));
+            $cnic = trim((string) ($r->father_cnic ?? ''));
+            if ($father !== '' || $cnic !== '') {
+                $text .= ' | ' . ($father !== '' ? $father : 'Father') . ($cnic !== '' ? (' (' . $cnic . ')') : '');
+            }
+            $results[] = ['id' => (int) $r->student_id, 'text' => $text];
+        }
+
+        return response()->json(['results' => $results]);
+    }
+
+    /**
+     * Select2 search: guardians (father) by name/CNIC.
+     */
+    public function feeSearchGuardians(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $q = trim((string) $request->get('q', ''));
+        $limit = 20;
+
+        $query = Guardian::where('school_id', $schoolId);
+        if ($q !== '') {
+            $digits = normalize_id_card_no($q);
+            $query->where(function ($w) use ($q, $digits) {
+                $w->where('name', 'LIKE', "%{$q}%")
+                    ->orWhere('id_card_no', 'LIKE', "%{$q}%");
+                if ($digits !== '') {
+                    $w->orWhere('id_card_no_normalized', 'LIKE', "%{$digits}%");
+                }
+            });
+        }
+
+        $guardians = $query->orderBy('name')->limit($limit)->get();
+        $results = [];
+        foreach ($guardians as $g) {
+            $childCount = StudentGuardian::where('guardian_id', $g->id)->distinct()->count('student_id');
+            $text = trim(($g->name ?? '') . ' — ' . ($g->id_card_no ?? ''));
+            $text .= ' | children: ' . $childCount;
+            $results[] = ['id' => (int) $g->id, 'text' => $text];
+        }
+
+        return response()->json(['results' => $results]);
+    }
+
+    /**
+     * Parent applications (Leave / Other): admin review list.
+     */
+    public function applications(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+
+        $status = strtolower(trim((string) $request->get('status', 'pending')));
+        $type = strtolower(trim((string) $request->get('type', '')));
+        $q = trim((string) $request->get('q', ''));
+
+        $query = DB::table('school_applications as a')
+            ->leftJoin('users as p', 'p.id', '=', 'a.parent_id')
+            ->leftJoin('users as s', 's.id', '=', 'a.student_id')
+            ->leftJoin('classes as c', 'c.id', '=', 'a.class_id')
+            ->leftJoin('sections as sec', 'sec.id', '=', 'a.section_id')
+            ->leftJoin('guardians as g', 'g.id', '=', 'a.guardian_id')
+            ->where('a.school_id', $schoolId);
+
+        if ($status !== '' && $status !== 'all') {
+            $query->where('a.status', $status);
+        }
+        if ($type !== '') {
+            $query->where('a.type', $type);
+        }
+        if ($q !== '') {
+            $digits = normalize_id_card_no($q);
+            $query->where(function ($w) use ($q, $digits) {
+                $w->where('a.title', 'LIKE', "%{$q}%")
+                    ->orWhere('a.message', 'LIKE', "%{$q}%")
+                    ->orWhere('p.name', 'LIKE', "%{$q}%")
+                    ->orWhere('s.name', 'LIKE', "%{$q}%")
+                    ->orWhere('g.name', 'LIKE', "%{$q}%")
+                    ->orWhere('g.id_card_no', 'LIKE', "%{$q}%");
+                if ($digits !== '') {
+                    $w->orWhere('g.id_card_no_normalized', 'LIKE', "%{$digits}%");
+                }
+            });
+        }
+
+        $rows = $query->select([
+            'a.*',
+            'p.name as parent_name',
+            's.name as student_name',
+            'c.name as class_name',
+            'sec.name as section_name',
+            'g.name as guardian_name',
+            'g.id_card_no as guardian_cnic',
+        ])->orderByDesc('a.id')->paginate(30)->appends($request->query());
+
+        return view('admin.applications.index', compact('rows', 'status', 'type', 'q'));
+    }
+
+    public function applicationsDecision(Request $request, int $id)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+
+        $data = $request->validate([
+            'decision' => ['required', 'string', 'in:approved,rejected'],
+            'decision_note' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $app = SchoolApplication::where('school_id', $schoolId)->where('id', $id)->first();
+        if (empty($app)) {
+            return redirect()->back()->with('error', 'Application not found.');
+        }
+
+        if (!in_array((string) $app->status, ['pending', 'approved', 'rejected'], true)) {
+            $app->status = 'pending';
+        }
+
+        $app->status = (string) $data['decision'];
+        $app->decision_note = !empty($data['decision_note']) ? trim((string) $data['decision_note']) : null;
+        $app->decided_by = (int) auth()->user()->id;
+        $app->decided_at = now();
+        $app->save();
+
+        // Email notification to parent (if SMTP configured)
+        try {
+            $parent = \App\Models\User::find((int) $app->parent_id);
+            $parentEmail = !empty($parent) ? trim((string) $parent->email) : '';
+            if (
+                $parentEmail !== '' &&
+                !empty(get_settings('smtp_user')) &&
+                !empty(get_settings('smtp_pass')) &&
+                !empty(get_settings('smtp_host')) &&
+                !empty(get_settings('smtp_port'))
+            ) {
+                Mail::to($parentEmail)->send(new ApplicationStatusEmail($app, (string) ($parent->name ?? 'Parent')));
+            }
+        } catch (\Throwable $e) {
+            Log::error('Application decision email failed', [
+                'application_id' => (int) $app->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Application updated successfully.');
+    }
+
+    /**
+     * Fee generator wizard.
+     */
+    public function feeGenerator()
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+        $classes = Classes::where('school_id', $schoolId)->get();
+
+        $generatedFeeGroupId = (string) request()->get('fee_group_id', '');
+        $generatedGuardians = [];
+        if ($generatedFeeGroupId !== '') {
+            $generatedGuardians = StudentFeeManager::where('school_id', $schoolId)
+                ->where('session_id', $activeSession)
+                ->where('fee_group_id', $generatedFeeGroupId)
+                ->whereNotNull('guardian_id')
+                ->distinct()
+                ->pluck('guardian_id')
+                ->toArray();
+        }
+
+        return view('admin.fees.generator', compact('classes', 'activeSession', 'generatedFeeGroupId', 'generatedGuardians'));
+    }
+
+    public function feeGeneratorPreview(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $data = $request->validate([
+            'class_id' => ['required', 'integer'],
+            'section_id' => ['required', 'integer'],
+            'title' => ['required', 'string', 'max:100'],
+            'billing_month' => ['required', 'integer', 'min:1', 'max:12'],
+            'billing_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'due_date' => ['nullable', 'date'],
+            'pool_by_guardian' => ['nullable'],
+        ]);
+
+        $classId = (int) $data['class_id'];
+        $sectionId = (int) $data['section_id'];
+        $pool = !empty($request->input('pool_by_guardian')) ? 1 : 0;
+
+        $classFee = ClassFeeStructure::where('school_id', $schoolId)
+            ->where('session_id', $activeSession)
+            ->where('class_id', $classId)
+            ->where(function ($q) use ($sectionId) {
+                $q->whereNull('section_id')->orWhere('section_id', $sectionId);
+            })
+            ->orderByRaw('section_id is null') // prefer section-specific
+            ->first();
+
+        $baseAmount = (int) ($classFee->amount ?? 0);
+
+        $enrolments = Enrollment::where('class_id', $classId)
+            ->where('section_id', $sectionId)
+            ->get();
+
+        // Preload active sibling discount rules (guardian-specific overrides global)
+        $activeSiblingRules = FeeSiblingDiscount::where('school_id', $schoolId)
+            ->where('is_active', 1)
+            ->where(function ($q) use ($activeSession) {
+                $q->whereNull('session_id')->orWhere('session_id', $activeSession);
+            })
+            ->orderByRaw('guardian_id is null') // prefer guardian-specific (not null)
+            ->orderByDesc('id')
+            ->get();
+
+        $rows = [];
+        $byGuardian = [];
+        foreach ($enrolments as $enrol) {
+            $studentId = (int) $enrol->user_id;
+            $student = User::find($studentId);
+            if (empty($student)) {
+                continue;
+            }
+
+            $guardianId = StudentGuardian::where('student_id', $studentId)
+                ->orderByDesc('is_fee_payer')
+                ->orderByDesc('is_primary')
+                ->value('guardian_id');
+
+            $guardian = !empty($guardianId) ? Guardian::find($guardianId) : null;
+
+            // concession lookup: student first, then guardian
+            $concession = FeeConcession::where('school_id', $schoolId)
+                ->where('is_active', 1)
+                ->where(function ($q) use ($activeSession) {
+                    $q->whereNull('session_id')->orWhere('session_id', $activeSession);
+                })
+                ->where(function ($q) use ($studentId, $guardianId) {
+                    $q->where(function ($qq) use ($studentId) {
+                        $qq->where('scope_type', 'student')->where('student_id', $studentId);
+                    });
+                    if (!empty($guardianId)) {
+                        $q->orWhere(function ($qq) use ($guardianId) {
+                            $qq->where('scope_type', 'guardian')->where('guardian_id', $guardianId);
+                        });
+                    }
+                })
+                ->orderByRaw("scope_type = 'student' desc")
+                ->orderByDesc('id')
+                ->first();
+
+            $discount = 0;
+            if (!empty($concession) && $baseAmount > 0) {
+                if ($concession->mode === 'percent') {
+                    $p = max(0, min(100, (int) $concession->value));
+                    $discount = (int) floor(($baseAmount * $p) / 100);
+                } else {
+                    $discount = max(0, min($baseAmount, (int) $concession->value));
+                }
+            }
+
+            $payable = max(0, $baseAmount - $discount);
+
+            $row = [
+                'student_id' => $studentId,
+                'student_name' => $student->name ?? '',
+                'guardian_id' => $guardianId,
+                'guardian_name' => $guardian->name ?? '',
+                'guardian_cnic' => $guardian->id_card_no ?? '',
+                'base_amount' => $baseAmount,
+                'discount_amount' => $discount,
+                'total_amount' => $payable,
+                'discount_reason' => !empty($concession) ? (($concession->scope_type ?? 'concession') . ' ' . ($concession->mode ?? '') . ' ' . ($concession->value ?? '')) : '',
+            ];
+            $rows[] = $row;
+
+            if (!empty($guardianId)) {
+                $byGuardian[(string) $guardianId][] = count($rows) - 1; // row index
+            }
+        }
+
+        // Apply sibling discount rules (youngest child only)
+        foreach ($byGuardian as $gidStr => $rowIndexes) {
+            $gid = (int) $gidStr;
+
+            $rule = $activeSiblingRules->firstWhere('guardian_id', $gid) ?? $activeSiblingRules->firstWhere('guardian_id', null);
+            if (empty($rule)) {
+                continue;
+            }
+
+            $resolved = $this->resolveYoungestStudentForGuardian($schoolId, $activeSession, $gid, (string) $rule->basis);
+            $siblingCount = (int) ($resolved['count'] ?? 0);
+            $youngestId = (int) ($resolved['youngest_student_id'] ?? 0);
+
+            if ($siblingCount < (int) $rule->min_children || $youngestId <= 0) {
+                continue;
+            }
+
+            foreach ($rowIndexes as $idx) {
+                if ((int) ($rows[$idx]['student_id'] ?? 0) !== $youngestId) {
+                    continue;
+                }
+
+                $base = (int) ($rows[$idx]['base_amount'] ?? 0);
+                if ($base <= 0) {
+                    continue;
+                }
+
+                $sibDiscount = 0;
+                if ($rule->mode === 'percent') {
+                    $p = max(0, min(100, (int) $rule->value));
+                    $sibDiscount = (int) floor(($base * $p) / 100);
+                } else {
+                    $sibDiscount = max(0, min($base, (int) $rule->value));
+                }
+
+                // Choose the higher discount (no stacking) to avoid accidental over-discounting.
+                $finalDiscount = max((int) ($rows[$idx]['discount_amount'] ?? 0), $sibDiscount);
+                $finalDiscount = max(0, min($base, $finalDiscount));
+
+                $rows[$idx]['discount_amount'] = $finalDiscount;
+                $rows[$idx]['total_amount'] = max(0, $base - $finalDiscount);
+                $rows[$idx]['discount_reason'] = 'sibling:' . ($rule->basis ?? 'hybrid') . ' youngest (' . ($rule->mode ?? '') . ' ' . ($rule->value ?? '') . ')';
+            }
+        }
+
+        $classes = Classes::where('school_id', $schoolId)->get();
+        $preview = [
+            'fee_title' => $classFee->title ?? 'Monthly Fee',
+            'base_amount' => $baseAmount,
+            'pool' => $pool,
+            'rows' => $rows,
+        ];
+
+        return view('admin.fees.generator', compact('classes', 'activeSession', 'preview', 'data'));
+    }
+
+    public function feeGeneratorGenerate(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $data = $request->validate([
+            'class_id' => ['required', 'integer'],
+            'section_id' => ['required', 'integer'],
+            'title' => ['required', 'string', 'max:100'],
+            'billing_month' => ['required', 'integer', 'min:1', 'max:12'],
+            'billing_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'due_date' => ['nullable', 'date'],
+            'pool_by_guardian' => ['nullable'],
+        ]);
+
+        $classId = (int) $data['class_id'];
+        $sectionId = (int) $data['section_id'];
+        $pool = !empty($request->input('pool_by_guardian')) ? 1 : 0;
+        $feeGroupId = (string) \Illuminate\Support\Str::uuid();
+
+        $classFee = ClassFeeStructure::where('school_id', $schoolId)
+            ->where('session_id', $activeSession)
+            ->where('class_id', $classId)
+            ->where(function ($q) use ($sectionId) {
+                $q->whereNull('section_id')->orWhere('section_id', $sectionId);
+            })
+            ->orderByRaw('section_id is null')
+            ->first();
+
+        $baseAmount = (int) ($classFee->amount ?? 0);
+
+        $enrolments = Enrollment::where('class_id', $classId)
+            ->where('section_id', $sectionId)
+            ->get();
+
+        $activeSiblingRules = FeeSiblingDiscount::where('school_id', $schoolId)
+            ->where('is_active', 1)
+            ->where(function ($q) use ($activeSession) {
+                $q->whereNull('session_id')->orWhere('session_id', $activeSession);
+            })
+            ->orderByRaw('guardian_id is null')
+            ->orderByDesc('id')
+            ->get();
+
+        // Pre-resolve youngest per guardian for this class/section run (so we don't recompute for every student).
+        $guardianIdsInRun = [];
+        foreach ($enrolments as $enrol) {
+            $sid = (int) $enrol->user_id;
+            $gid = (int) (StudentGuardian::where('student_id', $sid)
+                ->orderByDesc('is_fee_payer')
+                ->orderByDesc('is_primary')
+                ->value('guardian_id') ?? 0);
+            if ($gid > 0) {
+                $guardianIdsInRun[(string) $gid] = $gid;
+            }
+        }
+
+        $youngestMap = []; // guardian_id => ['youngest_student_id'=>..., 'count'=>..., 'rule'=>FeeSiblingDiscount|null]
+        foreach ($guardianIdsInRun as $gid) {
+            $rule = $activeSiblingRules->firstWhere('guardian_id', $gid) ?? $activeSiblingRules->firstWhere('guardian_id', null);
+            if (empty($rule)) {
+                continue;
+            }
+            $resolved = $this->resolveYoungestStudentForGuardian($schoolId, $activeSession, (int) $gid, (string) $rule->basis);
+            $youngestMap[(string) $gid] = [
+                'youngest_student_id' => (int) ($resolved['youngest_student_id'] ?? 0),
+                'count' => (int) ($resolved['count'] ?? 0),
+                'rule_id' => (int) ($rule->id ?? 0),
+                'basis' => (string) ($rule->basis ?? 'hybrid'),
+                'mode' => (string) ($rule->mode ?? 'percent'),
+                'value' => (int) ($rule->value ?? 0),
+                'min_children' => (int) ($rule->min_children ?? 2),
+            ];
+        }
+
+        $created = 0;
+        $guardiansInGroup = [];
+
+        foreach ($enrolments as $enrol) {
+            $studentId = (int) $enrol->user_id;
+            $student = User::find($studentId);
+            if (empty($student)) {
+                continue;
+            }
+
+            $parentId = (int) ($student->parent_id ?? 0);
+
+            $guardianId = StudentGuardian::where('student_id', $studentId)
+                ->orderByDesc('is_fee_payer')
+                ->orderByDesc('is_primary')
+                ->value('guardian_id');
+
+            $concession = FeeConcession::where('school_id', $schoolId)
+                ->where('is_active', 1)
+                ->where(function ($q) use ($activeSession) {
+                    $q->whereNull('session_id')->orWhere('session_id', $activeSession);
+                })
+                ->where(function ($q) use ($studentId, $guardianId) {
+                    $q->where(function ($qq) use ($studentId) {
+                        $qq->where('scope_type', 'student')->where('student_id', $studentId);
+                    });
+                    if (!empty($guardianId)) {
+                        $q->orWhere(function ($qq) use ($guardianId) {
+                            $qq->where('scope_type', 'guardian')->where('guardian_id', $guardianId);
+                        });
+                    }
+                })
+                ->orderByRaw("scope_type = 'student' desc")
+                ->orderByDesc('id')
+                ->first();
+
+            $discount = 0;
+            if (!empty($concession) && $baseAmount > 0) {
+                if ($concession->mode === 'percent') {
+                    $p = max(0, min(100, (int) $concession->value));
+                    $discount = (int) floor(($baseAmount * $p) / 100);
+                } else {
+                    $discount = max(0, min($baseAmount, (int) $concession->value));
+                }
+            }
+
+            $discountReason = !empty($concession) ? 'concession:' . ($concession->scope_type ?? '') : '';
+
+            // Sibling discount (youngest child)
+            if (!empty($guardianId) && isset($youngestMap[(string) $guardianId])) {
+                $m = $youngestMap[(string) $guardianId];
+                if (($m['count'] ?? 0) >= ($m['min_children'] ?? 2) && (int) ($m['youngest_student_id'] ?? 0) === $studentId) {
+                    $sibDiscount = 0;
+                    if (($m['mode'] ?? '') === 'percent') {
+                        $p = max(0, min(100, (int) ($m['value'] ?? 0)));
+                        $sibDiscount = (int) floor(($baseAmount * $p) / 100);
+                    } else {
+                        $sibDiscount = max(0, min($baseAmount, (int) ($m['value'] ?? 0)));
+                    }
+
+                    $finalDiscount = max($discount, $sibDiscount);
+                    $finalDiscount = max(0, min($baseAmount, $finalDiscount));
+                    if ($finalDiscount !== $discount) {
+                        $discount = $finalDiscount;
+                        $discountReason = 'sibling:' . ($m['basis'] ?? 'hybrid') . ' youngest';
+                    }
+                }
+            }
+
+            $payable = max(0, $baseAmount - $discount);
+
+            StudentFeeManager::create([
+                'title' => $data['title'],
+                'amount' => $baseAmount,
+                'discounted_price' => $discount,
+                'total_amount' => $payable,
+                'class_id' => $classId,
+                'parent_id' => $parentId ?: null,
+                'guardian_id' => $guardianId ?: null,
+                'student_id' => $studentId,
+                'payment_method' => 'cash',
+                'paid_amount' => 0,
+                'status' => 'unpaid',
+                'school_id' => $schoolId,
+                'session_id' => $activeSession,
+                'timestamp' => strtotime(date('d-M-Y')),
+                'fee_group_id' => $feeGroupId,
+                'billing_month' => (int) $data['billing_month'],
+                'billing_year' => (int) $data['billing_year'],
+                'due_date' => $data['due_date'] ?? null,
+                'fee_breakdown' => json_encode([
+                    'base_amount' => $baseAmount,
+                    'discount_amount' => $discount,
+                    'pool_by_guardian' => $pool,
+                    'discount_reason' => $discountReason,
+                ]),
+            ]);
+
+            $created++;
+            if (!empty($guardianId)) {
+                $guardiansInGroup[(string) $guardianId] = (int) $guardianId;
+            }
+        }
+
+        if ($created <= 0) {
+            return redirect()->back()->with('error', 'No student found.');
+        }
+
+        // Redirect back to generator; the group id can be used for family receipt printing.
+        return redirect()->route('admin.fees.generator', [
+            'generated' => 1,
+            'fee_group_id' => $feeGroupId,
+        ])->with('message', 'Invoices generated successfully.');
+    }
+
+    /**
+     * Print a family receipt for a generator run + guardian.
+     */
+    public function feeFamilyReceipt($fee_group_id, $guardian_id)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+
+        $feeGroupId = (string) $fee_group_id;
+        $guardianId = (int) $guardian_id;
+
+        $guardian = Guardian::where('school_id', $schoolId)->where('id', $guardianId)->first();
+
+        $invoices = StudentFeeManager::where('school_id', $schoolId)
+            ->where('session_id', $activeSession)
+            ->where('fee_group_id', $feeGroupId)
+            ->where('guardian_id', $guardianId)
+            ->orderBy('student_id')
+            ->get();
+
+        $students = [];
+        foreach ($invoices as $inv) {
+            $students[] = (new CommonController)->get_student_details_by_id($inv->student_id);
+        }
+
+        return view('admin.fees.family_receipt', compact('guardian', 'invoices', 'students', 'feeGroupId'));
+    }
+
+    /**
+     * Resolve youngest student in a family for sibling discount rules.
+     * Returns: ['youngest_student_id' => int, 'count' => int]
+     */
+    private function resolveYoungestStudentForGuardian(int $schoolId, int $activeSession, int $guardianId, string $basis): array
+    {
+        $basis = strtolower(trim($basis));
+        if (!in_array($basis, ['dob', 'class', 'hybrid'], true)) {
+            $basis = 'hybrid';
+        }
+
+        $studentIds = StudentGuardian::where('guardian_id', $guardianId)->pluck('student_id')->toArray();
+        if (empty($studentIds)) {
+            return ['youngest_student_id' => 0, 'count' => 0];
+        }
+
+        $students = User::whereIn('id', $studentIds)
+            ->where('school_id', $schoolId)
+            ->where('role_id', 7)
+            ->get();
+
+        $rows = [];
+        foreach ($students as $s) {
+            $info = json_decode((string) ($s->user_information ?? ''), true);
+            $birthday = null;
+            if (is_array($info) && isset($info['birthday']) && is_numeric($info['birthday'])) {
+                $birthday = (int) $info['birthday'];
+            }
+
+            $enrol = Enrollment::where('user_id', $s->id)
+                ->where('school_id', $schoolId)
+                ->where(function ($q) use ($activeSession) {
+                    $q->where('session_id', $activeSession)->orWhereNull('session_id');
+                })
+                ->first();
+            if (empty($enrol)) {
+                $enrol = Enrollment::where('user_id', $s->id)->where('school_id', $schoolId)->first();
+            }
+
+            $classId = (int) ($enrol->class_id ?? 0);
+            $class = $classId > 0 ? Classes::find($classId) : null;
+            $className = $class->name ?? '';
+            $classOrder = $class->sort_order ?? null;
+            if ($classOrder === null) {
+                // Fallback: parse numeric grade from class name (works for "Class 1", "Grade 2", etc.)
+                $classOrder = 9999;
+                if (preg_match('/(\d{1,2})/', (string) $className, $m)) {
+                    $classOrder = (int) $m[1];
+                } else {
+                    $n = strtolower((string) $className);
+                    $map = [
+                        'playgroup' => 0,
+                        'play group' => 0,
+                        'nursery' => 1,
+                        'prep' => 2,
+                        'kg' => 2,
+                        'k.g' => 2,
+                        'montessori' => 1,
+                    ];
+                    foreach ($map as $key => $val) {
+                        if (str_contains($n, $key)) {
+                            $classOrder = $val;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $rows[] = [
+                'student_id' => (int) $s->id,
+                'birthday' => $birthday,
+                'class_order' => (int) $classOrder,
+            ];
+        }
+
+        $count = count($rows);
+        if ($count <= 0) {
+            return ['youngest_student_id' => 0, 'count' => 0];
+        }
+
+        $allHaveDob = true;
+        foreach ($rows as $r) {
+            if (empty($r['birthday'])) {
+                $allHaveDob = false;
+                break;
+            }
+        }
+
+        $useDob = ($basis === 'dob') || ($basis === 'hybrid' && $allHaveDob);
+
+        usort($rows, function ($a, $b) use ($useDob) {
+            if ($useDob) {
+                // Younger = larger birthday timestamp
+                $cmp = (int) ($b['birthday'] ?? 0) <=> (int) ($a['birthday'] ?? 0);
+                if ($cmp !== 0) return $cmp;
+                // tie-break: smaller class first (younger grade)
+                $cmp2 = (int) ($a['class_order'] ?? 9999) <=> (int) ($b['class_order'] ?? 9999);
+                if ($cmp2 !== 0) return $cmp2;
+                return (int) ($b['student_id'] ?? 0) <=> (int) ($a['student_id'] ?? 0);
+            }
+
+            // Younger by class = smaller class_order
+            $cmp = (int) ($a['class_order'] ?? 9999) <=> (int) ($b['class_order'] ?? 9999);
+            if ($cmp !== 0) return $cmp;
+            // tie-break by DOB if available (younger DOB => larger ts)
+            $cmp2 = (int) ($b['birthday'] ?? 0) <=> (int) ($a['birthday'] ?? 0);
+            if ($cmp2 !== 0) return $cmp2;
+            return (int) ($b['student_id'] ?? 0) <=> (int) ($a['student_id'] ?? 0);
+        });
+
+        $youngest = $rows[0] ?? null;
+        return [
+            'youngest_student_id' => (int) ($youngest['student_id'] ?? 0),
+            'count' => $count,
+        ];
     }
 
     /**
@@ -3759,6 +5375,101 @@ class AdminController extends Controller
     {
         $school_details = School::find(auth()->user()->school_id);
         return view('admin.settings.school_settings', ['school_details' => $school_details]);
+    }
+
+    public function studentNumberPatterns()
+    {
+        $school_details = School::find(auth()->user()->school_id);
+
+        $patternAdmission = $school_details ? (string) ($school_details->admission_number_pattern ?: '{YYYY}-{SEQ:5}') : '{YYYY}-{SEQ:5}';
+        $patternEnrollment = $school_details ? (string) ($school_details->enrollment_number_pattern ?: '{YYYY}-{SEQ:5}') : '{YYYY}-{SEQ:5}';
+
+        $year = date('Y');
+        $yy = substr($year, -2);
+        $mm = date('m');
+
+        $schoolId = (int) auth()->user()->school_id;
+        $yearInt = (int) $year;
+
+        $lastAdmission = (int) (DB::table('student_number_sequences')
+            ->where('school_id', $schoolId)
+            ->where('type', 'admission')
+            ->where('year', $yearInt)
+            ->value('last_seq') ?? 0);
+
+        $lastEnrollment = (int) (DB::table('student_number_sequences')
+            ->where('school_id', $schoolId)
+            ->where('type', 'enrollment')
+            ->where('year', $yearInt)
+            ->value('last_seq') ?? 0);
+
+        $nextAdmissionSeq = $lastAdmission + 1;
+        $nextEnrollmentSeq = $lastEnrollment + 1;
+
+        $makePreview = function (string $pattern, int $seqValue) use ($year, $yy, $mm): string {
+            $pad = 5;
+            if (preg_match('/\{SEQ:(\d{1,2})\}/', $pattern, $m)) {
+                $n = (int) $m[1];
+                $pad = ($n >= 1 && $n <= 12) ? $n : 5;
+            }
+            $seq = str_pad((string) $seqValue, $pad, '0', STR_PAD_LEFT);
+            $out = str_replace(['{YYYY}', '{YY}', '{MM}'], [$year, $yy, $mm], $pattern);
+            return preg_replace('/\{SEQ:\d{1,2}\}/', $seq, $out, 1);
+        };
+
+        // Previews do not increment sequences
+        $preview = [
+            'admission' => $makePreview($patternAdmission, $nextAdmissionSeq),
+            'enrollment' => $makePreview($patternEnrollment, $nextEnrollmentSeq),
+            'admission_last' => $lastAdmission,
+            'enrollment_last' => $lastEnrollment,
+            'admission_next_seq' => $nextAdmissionSeq,
+            'enrollment_next_seq' => $nextEnrollmentSeq,
+        ];
+
+        return view('admin.settings.student_number_patterns', compact('school_details', 'preview'));
+    }
+
+    public function studentNumberPatternsUpdate(Request $request)
+    {
+        $data = $request->all();
+
+        $admission = (string) ($data['admission_number_pattern'] ?? '');
+        $enrollment = (string) ($data['enrollment_number_pattern'] ?? '');
+
+        foreach (['Admission' => $admission, 'Enrollment' => $enrollment] as $label => $pattern) {
+            $pattern = trim($pattern);
+            if ($pattern === '') {
+                continue;
+            }
+            if (strlen($pattern) > 60) {
+                return redirect()->back()->with('error', "{$label} pattern is too long.");
+            }
+
+            preg_match_all('/\{SEQ:(\d{1,2})\}/', $pattern, $seqMatches);
+            $seqCount = isset($seqMatches[0]) ? count($seqMatches[0]) : 0;
+            if ($seqCount !== 1) {
+                return redirect()->back()->with('error', "{$label} pattern must include exactly one {SEQ:n}.");
+            }
+            $pad = (int) ($seqMatches[1][0] ?? 0);
+            if ($pad < 1 || $pad > 12) {
+                return redirect()->back()->with('error', "{$label} pattern {SEQ:n} padding must be between 1 and 12.");
+            }
+
+            // Allow only known tokens
+            $stripped = preg_replace('/\{(YYYY|YY|MM)\}/', '', $pattern);
+            $stripped = preg_replace('/\{SEQ:\d{1,2}\}/', '', $stripped);
+            if (preg_match('/\{[A-Z0-9_:-]+\}/', $stripped)) {
+                return redirect()->back()->with('error', "{$label} pattern contains unsupported token(s). Allowed: {YYYY}, {YY}, {MM}, {SEQ:n}.");
+            }
+        }
+
+        School::where('id', auth()->user()->school_id)->update([
+            'admission_number_pattern' => $admission !== '' ? $admission : null,
+            'enrollment_number_pattern' => $enrollment !== '' ? $enrollment : null,
+        ]);
+
+        return redirect()->back()->with('message', 'Student number patterns updated successfully.');
     }
 
     public function schoolUpdate(Request $request)

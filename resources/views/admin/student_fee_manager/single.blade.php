@@ -33,16 +33,22 @@
 		</div>
 
 		<div class="fpb-7">
-			<label for="amount" class="eForm-label">{{ get_phrase('Total amount').'('.school_currency().')' }}</label>
-			<input type="number" class="form-control eForm-control" id="amount" name = "amount" required>
+			<label for="amount" class="eForm-label">{{ get_phrase('Base amount').'('.school_currency().')' }}</label>
+			<input type="number" class="form-control eForm-control" id="amount" name="amount" min="0" required oninput="recalcTotals()">
 		</div>
 
 		<div class="fpb-7">
 			<label for="discounted_price" class="eForm-label">{{ get_phrase('Discount amount').'('.school_currency().')' }}</label>
-			<input type="number" class="form-control eForm-control" id="discounted_price" name = "discounted_price" onkeyup="calculateDiscountPercentage(this.value)" min="0">
+			<input type="number" class="form-control eForm-control" id="discounted_price" name="discounted_price" oninput="calculateDiscountPercentage(this.value);recalcTotals();" min="0">
 
             <small class="text-muted discount_price_text"><?php echo get_phrase('This student has'); ?> <span id = "discounted_percentage" class="text-danger">0%</span> <?php echo get_phrase('discount'); ?></small>
 		</div>
+
+        <div class="fpb-7">
+            <label for="total_amount" class="eForm-label">{{ get_phrase('Payable (after discount)').'('.school_currency().')' }}</label>
+            <input type="number" class="form-control eForm-control" id="total_amount" name="total_amount" readonly>
+            <small class="text-muted">{{ get_phrase('This amount will be used for validation and invoice totals.') }}</small>
+        </div>
 
 		<div class="fpb-7">
 			<label for="paid_amount" class="eForm-label">{{ get_phrase('Paid amount').'('.school_currency().')' }}</label>
@@ -83,6 +89,7 @@
   "use strict";
 	jQuery(document).ready(function() {
 		calculateDiscountPercentage($('#discounted_price').val());
+        recalcTotals();
 	});
 	
 
@@ -121,6 +128,15 @@
         });
     }
 	
+    function recalcTotals() {
+        const base = parseInt(document.getElementById('amount')?.value || '0', 10) || 0;
+        let disc = parseInt(document.getElementById('discounted_price')?.value || '0', 10) || 0;
+        if (disc < 0) disc = 0;
+        if (disc > base) disc = base;
+        document.getElementById('discounted_price').value = disc;
+        document.getElementById('total_amount').value = Math.max(0, base - disc);
+    }
+
   $(document).ready(function () {
     $(".eChoice-multiple-with-remove").select2();
   });	

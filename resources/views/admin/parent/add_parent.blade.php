@@ -140,6 +140,23 @@
                                 </div>
 
                                 <div class="fpb-7">
+                                    <label for="id_card_no" class="eForm-label">{{ get_phrase('Parent ID card') }}</label>
+                                    <input
+                                    type="text"
+                                    id="parent_id_card"
+                                    name="parent_id_card"
+                                    class="form-control eForm-control"
+                                    inputmode="numeric"
+                                    autocomplete="off"
+                                    maxlength="13"
+                                    pattern="[0-9]{13}"
+                                    placeholder="3520212345671"
+                                    oninput="this.value = this.value.replace(/\\D/g,'').slice(0,13)"
+                                >
+                                <small class="text-muted">{{ get_phrase('Must be 13 digits') }}</small>
+                                </div>
+
+                                <div class="fpb-7">
                                     <label for="formFile" class="eForm-label">{{ get_phrase('Photo') }}</label>
                                     <input class="form-control eForm-control-file" id="photo" name="photo" type="file"
                                            accept="image/jpeg,image/png,image/webp"

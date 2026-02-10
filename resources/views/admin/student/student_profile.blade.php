@@ -60,6 +60,11 @@
                 </div>
             </div>
             <div class="col-lg-8">
+                <div class="d-flex justify-content-end mb-2">
+                    <a class="btn btn-light btn-sm" href="{{ route('admin.student.full_profile', ['id' => $student_details['user_id']]) }}">
+                        {{ get_phrase('View Full Profile') }}
+                    </a>
+                </div>
                 <ul class="nav nav-pills eNav-Tabs-justify" id="pills-tab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="pills-jHome-tab" data-bs-toggle="pill"
@@ -83,15 +88,26 @@
                             {{ get_phrase('More Additional Information') }}
                         </button>
                     </li>
+
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-withdrawal-tab" data-bs-toggle="pill"
+                            data-bs-target="#pills-withdrawal" type="button" role="tab"
+                            aria-controls="pills-withdrawal" aria-selected="false">
+                            {{ get_phrase('Withdrawal / SLC') }}
+                        </button>
+                    </li>
                 </ul>
                 <div class="tab-content eNav-Tabs-content" id="pills-tabContent">
                     <div class="tab-pane fade show active" id="pills-jHome" role="tabpanel"
                         aria-labelledby="pills-jHome-tab">
                         <div class="text name_title">
                             <h4>{{ get_phrase('Name') }} : {{ $student_details->name }}</h4>
+                            <h4>{{ get_phrase('Admission No') }} : <code>{{ $student_details['admission_no'] ?? '' }}</code></h4>
+                            <h4>{{ get_phrase('Enrollment No') }} : <code>{{ $student_details['enrollment_no'] ?? '' }}</code></h4>
                             <h4>{{ get_phrase('Class') }} : {{ null_checker($student_details->class_name) }}</h4>
                             <h4>{{ get_phrase('Section') }} : {{ null_checker($student_details->section_name) }}</h4>
                             <h4>{{ get_phrase('Parent') }} : {{ null_checker($student_details->parent_name) }}</h4>
+                            <h4>{{ get_phrase('Father CNIC') }} : {{ null_checker($student_details['parent_id_card'] ?? '') }}</h4>
                             <h4>{{ get_phrase('Blood') }} :
                                 {{ null_checker(strtoupper($student_details->blood_group)) }}</h4>
                             <h4>{{ get_phrase('Contact') }} : {{ null_checker($student_details->phone) }}</h4>
@@ -124,17 +140,73 @@
                             <div class="row">
                                 <div class="col-lg-6">
                                     @php
-                                        $student_details = json_decode($student_details->student_info);
+                                        $additional_info = json_decode($student_details->student_info);
                                     @endphp
                                     <ul>
-                                        @if(!empty($student_details))
-                                        @foreach ($student_details as $key => $student_detail)
+                                        @if(!empty($additional_info))
+                                        @foreach ($additional_info as $key => $student_detail)
                                             <h4>{{ ++$key }} . {{ $student_detail }}</h4>
                                         @endforeach
                                         @endif
                                     </ul>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="pills-withdrawal" role="tabpanel" aria-labelledby="pills-withdrawal-tab">
+                        <div class="text name_title">
+                            @php
+                                $isWithdrawn = !empty($student_details['is_withdrawn']);
+                                $withdrawalId = $student_details['withdrawal_id'] ?? null;
+                                $withdrawalRecord = $withdrawal ?? null;
+                            @endphp
+
+                            @if($isWithdrawn)
+                                <h4>{{ get_phrase('Status') }} : <span class="text-danger">{{ get_phrase('Withdrawn') }}</span></h4>
+                                <h4>{{ get_phrase('SLC No') }} : <code>{{ $withdrawalRecord->slc_no ?? ($student_details['withdrawal_slc_no'] ?? '') }}</code></h4>
+                                <h4>{{ get_phrase('Issue Date') }} : {{ $withdrawalRecord->slc_issue_date ?? '' }}</h4>
+                                <h4>{{ get_phrase('Withdrawal Date') }} : {{ $withdrawalRecord->withdrawal_date ?? ($student_details['withdrawal_date'] ?? '') }}</h4>
+                                <h4>{{ get_phrase('Admission No') }} : <code>{{ $withdrawalRecord->admission_no ?? ($student_details['admission_no'] ?? '') }}</code></h4>
+                                <h4>{{ get_phrase('Enrollment No') }} : <code>{{ $withdrawalRecord->enrollment_no ?? ($student_details['enrollment_no'] ?? '') }}</code></h4>
+                                <h4>{{ get_phrase('Class') }} : {{ $student_details->class_name ?? '' }}</h4>
+                                <h4>{{ get_phrase('Section') }} : {{ $student_details->section_name ?? '' }}</h4>
+                                <h4>{{ get_phrase('Father Name') }} : {{ $withdrawalRecord->father_name ?? ($student_details['father_name'] ?? '') }}</h4>
+                                <h4>{{ get_phrase('Father CNIC') }} : {{ $withdrawalRecord->father_cnic ?? ($student_details['parent_id_card'] ?? '') }}</h4>
+                                <h4>{{ get_phrase('Dues') }} :
+                                    @if(!empty($withdrawalRecord) && !empty($withdrawalRecord->dues_cleared))
+                                        <span class="text-success">{{ get_phrase('Cleared') }}</span>
+                                    @else
+                                        <span class="text-danger">{{ get_phrase('Not cleared') }}</span>
+                                    @endif
+                                </h4>
+                                <h4>{{ get_phrase('Reason') }} : {{ $withdrawalRecord->reason ?? '' }}</h4>
+                                <h4>{{ get_phrase('Remarks') }} : {{ $withdrawalRecord->remarks ?? '' }}</h4>
+                                @if(!empty($withdrawal_created_by))
+                                    <h4>{{ get_phrase('Withdrawn By') }} : {{ $withdrawal_created_by->name }}</h4>
+                                @endif
+
+                                @if(!empty($withdrawalId))
+                                    <div class="pt-2">
+                                        <a class="btn btn-primary btn-sm" target="_blank"
+                                            href="{{ route('admin.student.withdrawal.print', ['id' => $withdrawalId]) }}">
+                                            {{ get_phrase('Print SLC') }}
+                                        </a>
+                                    </div>
+                                @endif
+                            @else
+                                <h4>{{ get_phrase('Status') }} : <span class="text-success">{{ get_phrase('Active') }}</span></h4>
+                                <h4>{{ get_phrase('Admission No') }} : <code>{{ $student_details['admission_no'] ?? '' }}</code></h4>
+                                <h4>{{ get_phrase('Enrollment No') }} : <code>{{ $student_details['enrollment_no'] ?? '' }}</code></h4>
+                                <h4>{{ get_phrase('Father Name') }} : {{ $student_details['father_name'] ?? '' }}</h4>
+                                <h4>{{ get_phrase('Father CNIC') }} : {{ $student_details['parent_id_card'] ?? '' }}</h4>
+                                <div class="pt-2">
+                                    <a class="btn btn-danger btn-sm" href="javascript:;"
+                                        onclick="largeModal('{{ route('admin.student.withdrawal.modal', ['id' => $student_details['user_id']]) }}','{{ get_phrase('Withdraw Student / Issue SLC') }}')">
+                                        {{ get_phrase('Withdraw / Issue SLC') }}
+                                    </a>
+                                </div>
+                            @endif
                         </div>
                     </div>
 

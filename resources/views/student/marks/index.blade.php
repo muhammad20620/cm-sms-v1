@@ -34,7 +34,7 @@ $index = 0;
 
 <div class="row">
     <div class="col-12">
-        <div class="eSection-wrap">
+        <div class="eSection-wrap eSection-wrap--pad-bottom">
             <div class="export position-relative">
               <button class="eBtn-3 dropdown-toggle float-end mb-4" type="button" id="defaultDropdown" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">
                 <span class="pr-10">

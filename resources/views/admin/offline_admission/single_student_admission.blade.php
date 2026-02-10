@@ -77,6 +77,18 @@
         </div>
 
         <div class="row fmb-14 justify-content-between align-items-center">
+            <label for="parent_id" class="col-sm-2 col-eForm-label">{{ get_phrase('Parent') }}</label>
+            <div class="col-md-10">
+                <select name="parent_id" id="parent_id" class="form-select eForm-select eChoice-multiple-with-remove">
+                    <option value="">{{ get_phrase('Select a parent') }}</option>
+                    @foreach ($data['parents'] as $parent)
+                        <option value="{{ $parent->id }}">{{ $parent->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="row fmb-14 justify-content-between align-items-center">
             <label for="birthdatepicker" class="col-sm-2 col-eForm-label">{{ get_phrase('Birthday') }}<span
                     class="required"></span></label>
             <div class="col-md-10">
@@ -120,6 +132,32 @@
             <label for="address" class="col-sm-2 col-eForm-label">{{ get_phrase('Address') }}</label>
             <div class="col-md-10">
                 <textarea class="form-control eForm-control" id="address" rows="4" name = "address" required></textarea>
+            </div>
+        </div>
+
+        <div class="row fmb-14 justify-content-between align-items-center">
+            <label for="father_name" class="col-sm-2 col-eForm-label">{{ get_phrase('Father name') }}</label>
+            <div class="col-md-10">
+                <input type="text" id="father_name" name="father_name" class="form-control eForm-control">
+            </div>
+        </div>
+
+        <div class="row fmb-14 justify-content-between align-items-center">
+            <label for="parent_id_card" class="col-sm-2 col-eForm-label">{{ get_phrase('Parent ID card') }}</label>
+            <div class="col-md-10">
+                <input
+                    type="text"
+                    id="parent_id_card"
+                    name="parent_id_card"
+                    class="form-control eForm-control"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    maxlength="13"
+                    pattern="[0-9]{13}"
+                    placeholder="3520212345671"
+                    oninput="this.value = this.value.replace(/\\D/g,'').slice(0,13)"
+                >
+                <small class="text-muted">{{ get_phrase('Must be 13 digits') }}</small>
             </div>
         </div>
 

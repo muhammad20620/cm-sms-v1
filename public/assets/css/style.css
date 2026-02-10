@@ -2524,7 +2524,7 @@ body {
   margin-bottom: 8px;
 }
 .mainSection-title .eBreadcrumb-2 {
-  gap: 8px;
+  gap: 14px;
 }
 .mainSection-title .eBreadcrumb-2 li a {
   font-size: 14px;
@@ -5164,17 +5164,17 @@ input[type=time]::-webkit-calendar-picker-indicator {
 }
 
 .eTable-2 > :not(caption) > * > * {
-  padding: 16px 18px !important;
-  border-bottom: 1px dashed #dedede !important;
+  /* padding: 16px 18px !important; */
+  /* border-bottom: 1px dashed #dedede !important; */
   transition: all 0.2s ease;
 }
 .eTable-2 > :not(caption) > * > *:first-child {
-  padding-left: 0px !important;
+  /* padding-left: 0px !important; */
 }
 .eTable-2 > :not(caption) > * > *:last-child {
-  width: 107px;
-  padding-right: 0px !important;
-  text-align: right;
+  /* width: 107px; */
+  /* padding-right: 0px !important; */
+  /* text-align: right; */
 }
 .eTable-2 > :not(:first-child) {
   border-top: 1.2px solid #dedede !important;
@@ -5188,11 +5188,11 @@ input[type=time]::-webkit-calendar-picker-indicator {
   background-color: #fafbfc;
 }
 .eTable-2 thead tr th:first-child {
-  padding-left: 0px !important;
+  /* padding-left: 0px !important; */
 }
 .eTable-2 thead tr th:last-child {
-  padding-right: 0px !important;
-  text-align: right;
+  /* padding-right: 0px !important; */
+  /* text-align: right; */
 }
 .eTable-2 tbody tr {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -5562,7 +5562,7 @@ input[type=time]::-webkit-calendar-picker-indicator {
   padding: 20px 16px !important;
 }
 .eTable-2 > :not(caption) > * > *:first-child {
-  padding-left: 0px !important;
+  /* padding-left: 0px !important; */
 }
 .eTable-2 > :not(:first-child) {
   border-top: 1.2px solid #dedede !important;

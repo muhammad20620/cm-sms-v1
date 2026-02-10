@@ -72,6 +72,41 @@
 .opacity-1{opacity: .1 !important;}
 .opacity-0{opacity: 0 !important;}
 
+/* -------------------------------------------------------
+   Layout fixes
+   ------------------------------------------------------- */
+
+/* Some pages wrap tables inside `.eSection-wrap` which has `padding-bottom: 0` in `style.css`,
+   causing content to visually touch the bottom edge. Use this helper class for extra spacing. */
+.eSection-wrap.eSection-wrap--pad-bottom{
+  padding-bottom: 20px !important;
+}
+
+/* Fix: tables inside `.eSection-wrap-2` overflow/clipping on wide screens
+   `style.css` sets `.eSection-wrap-2 .table-responsive { overflow-x: visible; }` which can
+   cause the right side of tables/text to get clipped because the outer `.wrapper`
+   uses `overflow-x: hidden`. Keep horizontal scroll inside the card instead. */
+.student-full-profile .eSection-wrap-2 .table-responsive{
+  overflow-x: auto !important;
+}
+.student-full-profile .eSection-wrap-2 .table-responsive tbody tr td {
+  width: webkit-fill-available !important;
+}
+
+/* Enable Select2 dropdown search for specific dropdowns.
+   `style.css` globally hides it via `.select2-search--dropdown { display:none !important; }`. */
+.cm-select2-dropdown-search .select2-search--dropdown{
+  display: block !important;
+  padding: 10px 12px;
+}
+.cm-select2-dropdown-search .select2-search--dropdown .select2-search__field{
+  width: 100% !important;
+  border: 1px solid #e3e4ea !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  outline: none !important;
+}
+
 
 
 
@@ -538,7 +573,6 @@ div#user-results {
   }
   .position-relative {
     position: relative !important;
-    height: 65%;
 }
 
 .chat_user_name {
@@ -820,6 +854,19 @@ a.list-group-item.list-group-item-action:last-child {
     .chat_write_box_text_area {
         font-size: 13px;
     }
+}
+
+/* Scrollable tables (vertical + horizontal) */
+.eTable-scroll {
+  max-height: 65vh;
+  overflow: auto;
+}
+
+.eTable-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
 }
 
 

@@ -36,16 +36,21 @@ use App\Models\User;
         </div>
 
         <div class="fpb-7">
-            <label for="total_amount"  class="eForm-label">{{ get_phrase('Total amount').'('.school_currency().')' }}</label>
-            <input type="text" class="form-control eForm-control" id="amount" name = "amount" value="{{ $invoice_details['amount'] }}" required>
+            <label for="amount"  class="eForm-label">{{ get_phrase('Base amount').'('.school_currency().')' }}</label>
+            <input type="number" class="form-control eForm-control" id="amount" name="amount" value="{{ $invoice_details['amount'] }}" required oninput="recalcTotals()">
         </div>
                             
         <div class="fpb-7">
 			<label for="discounted_price" class="eForm-label">{{ get_phrase('Discount amount').'('.school_currency().')' }}</label>
-			<input type="number" class="form-control eForm-control" id="discounted_price" name = "discounted_price" onkeyup="calculateDiscountPercentage(this.value)" min="0"  value="{{ $invoice_details['discounted_price'] }}">
+			<input type="number" class="form-control eForm-control" id="discounted_price" name="discounted_price" oninput="calculateDiscountPercentage(this.value);recalcTotals();" min="0"  value="{{ $invoice_details['discounted_price'] }}">
 
             <small class="text-muted discount_price_text"><?php echo get_phrase('This student has'); ?> <span id = "discounted_percentage" class="text-danger">0%</span> <?php echo get_phrase('discount'); ?></small>
 		</div>
+
+        <div class="fpb-7">
+            <label for="total_amount"  class="eForm-label">{{ get_phrase('Payable (after discount)').'('.school_currency().')' }}</label>
+            <input type="number" class="form-control eForm-control" id="total_amount" name="total_amount" value="{{ $invoice_details['total_amount'] ?? '' }}" readonly>
+        </div>
 
         <div class="fpb-7">
             <label for="paid_amount" class="eForm-label">{{ get_phrase('Paid amount').'('.school_currency().')' }}</label>
@@ -88,6 +93,7 @@ use App\Models\User;
 
   jQuery(document).ready(function() {
 		calculateDiscountPercentage($('#discounted_price').val());
+        recalcTotals();
 	});
 	
 
@@ -104,6 +110,15 @@ use App\Models\User;
         }
     }
 }
+
+    function recalcTotals() {
+        const base = parseInt(document.getElementById('amount')?.value || '0', 10) || 0;
+        let disc = parseInt(document.getElementById('discounted_price')?.value || '0', 10) || 0;
+        if (disc < 0) disc = 0;
+        if (disc > base) disc = base;
+        document.getElementById('discounted_price').value = disc;
+        document.getElementById('total_amount').value = Math.max(0, base - disc);
+    }
 	
 	function classWiseStudentOnCreate(classId) {
 		let url = "{{ route('admin.class_wise_student', ['id' => ":classId"]) }}";

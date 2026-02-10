@@ -265,6 +265,13 @@ Route::controller(AdminController::class)->middleware('admin','auth')->group(fun
     Route::post('admin/student/{id}', 'studentUpdate')->name('admin.student.update');
     Route::get('admin/student/delete/{id}', 'studentDelete')->name('admin.student.delete');
     Route::get('admin/student/student_profile/{id}', 'studentProfile')->name('admin.student.student_profile');
+    Route::get('admin/student/full_profile/{id}', 'studentFullProfile')->name('admin.student.full_profile')->middleware('admin_permission');
+
+    // Student withdrawal / School leaving certificate (SLC)
+    Route::get('admin/student-withdrawals', 'studentWithdrawalsList')->name('admin.student_withdrawals')->middleware('admin_permission');
+    Route::get('admin/student/{id}/withdrawal', 'studentWithdrawalModal')->name('admin.student.withdrawal.modal')->middleware('admin_permission');
+    Route::post('admin/student/{id}/withdrawal', 'studentWithdrawalStore')->name('admin.student.withdrawal.store');
+    Route::get('admin/student-withdrawals/print/{id}', 'studentWithdrawalPrint')->name('admin.student.withdrawal.print')->middleware('admin_permission');
 
     //User Account Status
     Route::get('admin/user_disable/{id}', 'account_disable')->name('admin.account_disable');
@@ -425,6 +432,26 @@ Route::controller(AdminController::class)->middleware('admin','auth')->group(fun
     Route::get('admin/student_fee/invoice/{id}', 'studentFeeinvoice')->name('admin.studentFeeinvoice');
     Route::get('admin/offline_payment/pending', 'offline_payment_pending')->name('admin.offline_payment_pending')->middleware('admin_permission');
 
+    // Fee setup & generator (Pakistan: pool by Father CNIC via guardian_id)
+    Route::get('admin/fees/class-fees', 'classFees')->name('admin.fees.class_fees')->middleware('admin_permission');
+    Route::post('admin/fees/class-fees', 'classFeesStore')->name('admin.fees.class_fees.store');
+    Route::get('admin/fees/concessions', 'feeConcessions')->name('admin.fees.concessions')->middleware('admin_permission');
+    Route::post('admin/fees/concessions', 'feeConcessionsStore')->name('admin.fees.concessions.store');
+    Route::get('admin/fees/sibling-discounts', 'feeSiblingDiscounts')->name('admin.fees.sibling_discounts')->middleware('admin_permission');
+    Route::post('admin/fees/sibling-discounts', 'feeSiblingDiscountsStore')->name('admin.fees.sibling_discounts.store');
+    Route::get('admin/fees/generator', 'feeGenerator')->name('admin.fees.generator')->middleware('admin_permission');
+    Route::post('admin/fees/generator/preview', 'feeGeneratorPreview')->name('admin.fees.generator.preview');
+    Route::post('admin/fees/generator/generate', 'feeGeneratorGenerate')->name('admin.fees.generator.generate');
+    Route::get('admin/fees/family-receipt/{fee_group_id}/{guardian_id}', 'feeFamilyReceipt')->name('admin.fees.family_receipt')->middleware('admin_permission');
+
+    // Select2 search endpoints (students/guardians)
+    Route::get('admin/fees/search/students', 'feeSearchStudents')->name('admin.fees.search.students')->middleware('admin_permission');
+    Route::get('admin/fees/search/guardians', 'feeSearchGuardians')->name('admin.fees.search.guardians')->middleware('admin_permission');
+
+    // Parent applications (Leave / Other)
+    Route::get('admin/applications', 'applications')->name('admin.applications')->middleware('admin_permission');
+    Route::post('admin/applications/{id}/decision', 'applicationsDecision')->name('admin.applications.decision')->middleware('admin_permission');
+
 
     //Expense routes
     Route::get('admin/expenses/list', 'expenseList')->name('admin.expense.list')->middleware('admin_permission');
@@ -495,6 +522,8 @@ Route::controller(AdminController::class)->middleware('admin','auth')->group(fun
     Route::post('admin/settings/payment/post', 'paymentSettings_post')->name('admin.settings.payment_post');
     Route::get('admin/settings/school', 'schoolSettings')->name('admin.settings.school')->middleware('admin_permission');
     Route::post('admin/settings/school', 'schoolUpdate')->name('admin.school.update');
+    Route::get('admin/settings/student-number-patterns', 'studentNumberPatterns')->name('admin.student_number_patterns')->middleware('admin_permission');
+    Route::post('admin/settings/student-number-patterns', 'studentNumberPatternsUpdate')->name('admin.student_number_patterns.update');
 
     //Session routes
     Route::get('admin/session_manager', 'sessionManager')->name('admin.settings.session_manager')->middleware('admin_permission');
@@ -690,6 +719,10 @@ Route::controller(ParentController::class)->middleware('parent','auth')->group(f
 
     //Event routes
     Route::get('parent/events/list', 'eventList')->name('parent.events.list');
+
+    // Applications (Leave / Other)
+    Route::get('parent/applications', 'applications')->name('parent.applications');
+    Route::post('parent/applications', 'applicationsStore')->name('parent.applications.store');
 
 
     //Profile

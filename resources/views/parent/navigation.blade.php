@@ -247,6 +247,17 @@
         </ul>
       </li>
 
+      <li class="nav-links-li {{ request()->is('parent/applications*') ? 'showMenu':'' }}">
+        <div class="iocn-link">
+          <a href="{{ route('parent.applications') }}">
+            <div class="sidebar_icon">
+              <svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24" width="48" height="48"><path d="M22,7.157V18.5A5.507,5.507,0,0,1,16.5,24h-9A5.507,5.507,0,0,1,2,18.5V5.5A5.507,5.507,0,0,1,7.5,0h7.343a5.464,5.464,0,0,1,3.889,1.611l1.657,1.657A5.464,5.464,0,0,1,22,7.157ZM18.985,7H17a2,2,0,0,1-2-2V3.015C14.947,3.012,7.5,3,7.5,3A2.5,2.5,0,0,0,5,5.5v13A2.5,2.5,0,0,0,7.5,21h9A2.5,2.5,0,0,0,19,18.5S18.988,7.053,18.985,7ZM8,10.5A1.5,1.5,0,0,0,9.5,12h5a1.5,1.5,0,0,0,0-3h-5A1.5,1.5,0,0,0,8,10.5Zm0,5A1.5,1.5,0,0,0,9.5,17h5a1.5,1.5,0,0,0,0-3h-5A1.5,1.5,0,0,0,8,15.5Z"/></svg>
+            </div>
+            <span class="link_name">{{ get_phrase('Applications') }}</span>
+          </a>
+        </div>
+      </li>
+
       <li class="nav-links-li {{ request()->is('parent/noticeboard*') || request()->is('parent/events/list*') || request()->is('parent/feedback/filter*') ? 'showMenu':'' }}">
         <div class="iocn-link">
           <a href="#">

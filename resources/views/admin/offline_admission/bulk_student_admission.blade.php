@@ -37,7 +37,7 @@
                     <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
                         <input type="password" name="password[]" class="form-control eForm-control"  value="" placeholder="Password" required>
                     </div>
-                    <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                    <div class="form-group col-xl-1 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
                         <select name="gender[]" class="form-select eForm-select eChoice-multiple-with-remove" required>
                             <option value="">{{ get_phrase('Select gender') }}</option>
                             <option value="Male">{{ get_phrase('Male') }}</option>
@@ -46,13 +46,21 @@
                         </select>
                     </div>
 
-                    <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                    <div class="form-group col-xl-1 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
                         <select name="parent_id[]" class="form-select eForm-select eChoice-multiple-with-remove" required>
                             <option value="">{{ get_phrase('Select a parent') }}</option>
                             @foreach($data['parents'] as $parent)
                                 <option value="{{ $parent->id }}">{{ $parent->name }}</option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                        <input type="text" name="father_name[]" class="form-control eForm-control" value="" placeholder="Father name">
+                    </div>
+
+                    <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                        <input type="text" name="parent_id_card[]" class="form-control eForm-control" value="" placeholder="Parent ID card (CNIC)">
                     </div>
                     
                 </div>
@@ -86,7 +94,7 @@
                     <input type="password" name="password[]" class="form-control eForm-control"  value="" placeholder="Password">
                 </div>
 
-                <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                <div class="form-group col-xl-1 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
                     <select name="gender[]" class="form-control eForm-control">
                         <option value="">{{ get_phrase('Select gender') }}</option>
                         <option value="Male">{{ get_phrase('Male') }}</option>
@@ -95,13 +103,21 @@
                     </select>
                 </div>
 
-                <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                <div class="form-group col-xl-1 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
                     <select name="parent_id[]" class="form-control eForm-control" required>
                         <option value="">{{ get_phrase('Select a parent') }}</option>
                         @foreach($data['parents'] as $parent)
                             <option value="{{ $parent->id }}">{{ $parent->name }}</option>
                         @endforeach
                     </select>
+                </div>
+
+                <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                    <input type="text" name="father_name[]" class="form-control eForm-control" value="" placeholder="Father name">
+                </div>
+
+                <div class="form-group col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-1 mb-lg-0">
+                    <input type="text" name="parent_id_card[]" class="form-control eForm-control" value="" placeholder="Parent ID card (CNIC)">
                 </div>
             </div>
         </div>

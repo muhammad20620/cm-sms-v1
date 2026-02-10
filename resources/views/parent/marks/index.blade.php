@@ -22,7 +22,7 @@
 
 <div class="row">
     <div class="col-12">
-        <div class="eSection-wrap">
+        <div class="eSection-wrap eSection-wrap--pad-bottom">
             <div class="row mt-3">
 
                 <div class="col-md-4"></div>

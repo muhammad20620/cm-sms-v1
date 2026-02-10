@@ -14,6 +14,9 @@ use Illuminate\Support\Str;
 use App\Models\Gradebook;
 use App\Models\Subject;
 use App\Models\School;
+use App\Models\StudentGuardian;
+use App\Models\Guardian;
+use App\Models\StudentWithdrawal;
 use App\Models\Exam;
 use DB;
 use PDF;
@@ -36,8 +39,13 @@ class CommonController extends Controller
         $enrol_data = Enrollment::where('user_id', $id)->first();
 
         $student = User::find($id);
+        $info = json_decode((string) $student->user_information);
 
-        $info = json_decode($student->user_information);
+        $guardianRow = StudentGuardian::where('student_id', $id)
+            ->orderByDesc('is_primary')
+            ->orderByDesc('is_fee_payer')
+            ->first();
+        $guardian = !empty($guardianRow) ? Guardian::find($guardianRow->guardian_id) : null;
 
         $parent_details = User::find($student->parent_id);
 
@@ -51,12 +59,18 @@ class CommonController extends Controller
 
         $school_name = School::find($student->school_id)->value('title');
 
+        $withdrawal = StudentWithdrawal::where('school_id', $student->school_id)
+            ->where('student_id', $id)
+            ->first();
+
         //End Fetch
 
 
         $enrol_data['code'] = $student->code;
+        $enrol_data['admission_no'] = $student->code;
+        $enrol_data['enrollment_no'] = $enrol_data->enrollment_no ?? '';
         $enrol_data['user_id'] = $id;
-        $enrol_data['parent_name'] = $parent_details->name??"";
+        $enrol_data['parent_name'] = $guardian->name ?? ($parent_details->name ?? "");
         $enrol_data['name'] = $student->name;
         $enrol_data['email'] = $student->email;
 
@@ -64,6 +78,9 @@ class CommonController extends Controller
 
         $enrol_data['address'] = $info->address;
         $enrol_data['phone'] = $info->phone;
+        $parent_info = !empty($parent_details) ? json_decode((string) $parent_details->user_information) : null;
+        $enrol_data['father_name'] = $guardian->name ?? ($info->father_name ?? ($parent_details->name ?? ''));
+        $enrol_data['parent_id_card'] = $guardian->id_card_no ?? ($info->parent_id_card ?? ($parent_info->id_card_no ?? ''));
         $enrol_data['birthday'] = $info->birthday;
         $enrol_data['gender'] = $info->gender;
         $enrol_data['blood_group'] = $info->blood_group??"";
@@ -77,6 +94,11 @@ class CommonController extends Controller
         $enrol_data['class_id'] = $class_details->id ??"";
         $enrol_data['section_name'] = $section_details->name ??"";
         $enrol_data['section_id'] = $section_details->id ??"";
+
+        $enrol_data['is_withdrawn'] = !empty($withdrawal) ? 1 : 0;
+        $enrol_data['withdrawal_id'] = $withdrawal->id ?? null;
+        $enrol_data['withdrawal_slc_no'] = $withdrawal->slc_no ?? null;
+        $enrol_data['withdrawal_date'] = $withdrawal->withdrawal_date ?? null;
 
         return $enrol_data;
     }
@@ -111,6 +133,13 @@ class CommonController extends Controller
         //Fetch Details
         $enrol_data = Enrollment::where('user_id', $id)->first();
         $student = User::find($id);
+        $info = json_decode((string) $student->user_information);
+
+        $guardianRow = StudentGuardian::where('student_id', $id)
+            ->orderByDesc('is_primary')
+            ->orderByDesc('is_fee_payer')
+            ->first();
+        $guardian = !empty($guardianRow) ? Guardian::find($guardianRow->guardian_id) : null;
         $class_details = Classes::find($enrol_data->class_id);
 
         $section_details = Section::find($enrol_data->section_id);
@@ -119,9 +148,13 @@ class CommonController extends Controller
 
         $enrol_data['parent_id'] = $student->parent_id;
         $enrol_data['code'] = $student->code;
+        $enrol_data['admission_no'] = $student->code;
+        $enrol_data['enrollment_no'] = $enrol_data->enrollment_no ?? '';
         $enrol_data['user_id'] = $id;
         $enrol_data['name'] = $student->name;
         $enrol_data['email'] = $student->email;
+        $enrol_data['father_name'] = $guardian->name ?? ($info->father_name ?? '');
+        $enrol_data['parent_id_card'] = $guardian->id_card_no ?? ($info->parent_id_card ?? '');
 
 
         $enrol_data['class_name'] = $class_details->name ??"";

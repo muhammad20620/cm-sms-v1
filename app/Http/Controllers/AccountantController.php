@@ -14,6 +14,7 @@ use App\Models\FrontendEvent;
 use App\Models\MessageThrade;
 use App\Models\Chat;
 use App\Models\User;
+use App\Models\StudentGuardian;
 use App\Events\MessageSent;
 
 use Illuminate\Support\Facades\DB;
@@ -175,6 +176,10 @@ class AccountantController extends Controller
             $parent_id=User::find($data['student_id'])->toArray();
             $parent_id=$parent_id['parent_id'];
             $data['parent_id'] = $parent_id;
+            $data['guardian_id'] = StudentGuardian::where('student_id', $data['student_id'])
+                ->orderByDesc('is_fee_payer')
+                ->orderByDesc('is_primary')
+                ->value('guardian_id');
 
             $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
 
@@ -217,6 +222,10 @@ class AccountantController extends Controller
                 $parent_id=User::find($data['student_id'])->toArray();
                 $parent_id=$parent_id['parent_id'];
                 $data['parent_id'] = $parent_id;
+                $data['guardian_id'] = StudentGuardian::where('student_id', $data['student_id'])
+                    ->orderByDesc('is_fee_payer')
+                    ->orderByDesc('is_primary')
+                    ->value('guardian_id');
                 StudentFeeManager::create($data);
             }
 

@@ -1,0 +1,64 @@
+@php
+  use App\Models\School;
+  use App\Models\User;
+  use App\Models\Classes;
+  use App\Models\Section;
+  use App\Models\Guardian;
+
+  $a = $application;
+  $school = School::find($a->school_id);
+  $student = !empty($a->student_id) ? User::find($a->student_id) : null;
+  $class = !empty($a->class_id) ? Classes::find($a->class_id) : null;
+  $section = !empty($a->section_id) ? Section::find($a->section_id) : null;
+  $guardian = !empty($a->guardian_id) ? Guardian::find($a->guardian_id) : null;
+@endphp
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Status</title>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background:#f6f6f9;">
+  <div style="max-width: 640px; margin: 0 auto; padding: 24px;">
+    <div style="background:#fff; border:1px solid #e3e4ea; border-radius:10px; padding:24px;">
+      <h2 style="margin:0 0 8px 0; color:#0C141D;">
+        {{ get_phrase('Application Status Update') }}
+      </h2>
+      <p style="margin:0 0 16px 0; color:#6b7280;">
+        {{ get_phrase('School') }}: <strong>{{ $school->title ?? get_settings('system_title') }}</strong>
+      </p>
+
+      <p style="margin:0 0 10px 0; color:#0C141D;">
+        {{ get_phrase('Hi') }} <strong>{{ $parentName }}</strong>,
+      </p>
+      <p style="margin:0 0 18px 0; color:#374151;">
+        {{ get_phrase('Your application has been') }}
+        <strong>{{ strtoupper((string) $a->status) }}</strong>.
+      </p>
+
+      <div style="border:1px solid #e3e4ea; border-radius:10px; padding:16px; background:#fafafa;">
+        <p style="margin:0 0 8px 0;"><strong>{{ get_phrase('Title') }}:</strong> {{ $a->title }}</p>
+        <p style="margin:0 0 8px 0;"><strong>{{ get_phrase('Type') }}:</strong> {{ ucfirst((string) $a->type) }}</p>
+        <p style="margin:0 0 8px 0;"><strong>{{ get_phrase('Student') }}:</strong> {{ $student->name ?? '-' }}</p>
+        <p style="margin:0 0 8px 0;"><strong>{{ get_phrase('Class') }}:</strong> {{ $class->name ?? '-' }}</p>
+        <p style="margin:0 0 8px 0;"><strong>{{ get_phrase('Section') }}:</strong> {{ $section->name ?? '-' }}</p>
+        <p style="margin:0 0 8px 0;"><strong>{{ get_phrase('Father CNIC') }}:</strong> {{ $guardian->id_card_no ?? '-' }}</p>
+        @if($a->type === 'leave' && !empty($a->leave_from) && !empty($a->leave_to))
+          <p style="margin:0 0 8px 0;"><strong>{{ get_phrase('Leave') }}:</strong> {{ $a->leave_from }} → {{ $a->leave_to }}</p>
+        @endif
+        @if(!empty($a->decision_note))
+          <p style="margin:0;"><strong>{{ get_phrase('School response') }}:</strong> {{ $a->decision_note }}</p>
+        @endif
+      </div>
+
+      <p style="margin:18px 0 0 0; color:#6b7280; font-size: 12px;">
+        {{ get_phrase('This is an automated email. Please do not reply.') }}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+

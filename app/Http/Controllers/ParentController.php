@@ -38,13 +38,59 @@ use App\Models\Feedback;
 use App\Models\MessageThrade;
 use App\Models\Chat;
 use App\Models\PaymentMethods;
+use App\Models\Guardian;
+use App\Models\SchoolApplication;
+use App\Mail\ApplicationSubmittedEmail;
 
 use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Events\MessageSent;
 use PhpParser\Builder\Class_;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class ParentController extends Controller
 {
+    private function childStudentsQuery(?string $search = null): Builder
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $parentUserId = (int) auth()->user()->id;
+
+        $query = User::query()
+            ->where('role_id', 7)
+            ->where('school_id', $schoolId)
+            ->where(function ($q) use ($schoolId, $parentUserId) {
+                // New flow: guardian linked to this parent user
+                $q->whereIn('id', function ($sub) use ($schoolId, $parentUserId) {
+                    $sub->from('student_guardians as sg')
+                        ->join('guardians as g', 'g.id', '=', 'sg.guardian_id')
+                        ->select('sg.student_id')
+                        ->where('g.school_id', $schoolId)
+                        ->where('g.user_id', $parentUserId);
+                })
+                // Legacy fallback
+                ->orWhere('parent_id', $parentUserId);
+            });
+
+        if (!empty($search)) {
+            $query->where('name', 'LIKE', "%{$search}%");
+        }
+
+        return $query;
+    }
+
+    private function currentGuardianId(): ?int
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $parentUserId = (int) auth()->user()->id;
+
+        $guardianId = Guardian::where('school_id', $schoolId)
+            ->where('user_id', $parentUserId)
+            ->value('id');
+
+        return $guardianId ? (int) $guardianId : null;
+    }
+
     public function parentDashboard()
     {
         return view('parent.dashboard');
@@ -72,19 +118,7 @@ class ParentController extends Controller
     public function childList(Request $request)
     {
         $search = $request['search'] ?? "";
-
-        if($search != "") {
-
-            $students = User::where(function ($query) use($search) {
-                $query->where('name', 'LIKE', "%{$search}%")
-                    ->where('parent_id', auth()->user()->id)
-                    ->where('school_id', auth()->user()->school_id)
-                    ->where('role_id', 7);
-            })->paginate(10);
-
-        } else {
-            $students = User::where('role_id', 7)->where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->paginate(10);
-        }
+        $students = $this->childStudentsQuery($search)->paginate(10);
 
         return view('parent.user.child_list', compact('students', 'search'));
     }
@@ -99,7 +133,7 @@ class ParentController extends Controller
     { //parent
 
         $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
-        $details_of_chilren = User::where('parent_id', auth()->user()->id)->get()->toArray();
+        $details_of_chilren = $this->childStudentsQuery()->get()->toArray();
         $invoices = "i";
 
 
@@ -112,9 +146,29 @@ class ParentController extends Controller
             $selected_status = $data['status'];
 
             if ($selected_status != "all") {
-                $invoices = StudentFeeManager::where('timestamp', '>=', $date_from)->where('timestamp', '<=', $date_to)->where('status', $selected_status)->where('parent_id', auth()->user()->id)->where('session_id', $active_session)->get();
+                $guardianId = $this->currentGuardianId();
+                $invoicesQuery = StudentFeeManager::where('timestamp', '>=', $date_from)
+                    ->where('timestamp', '<=', $date_to)
+                    ->where('status', $selected_status)
+                    ->where('session_id', $active_session);
+                if (!empty($guardianId)) {
+                    $invoicesQuery->where('guardian_id', $guardianId);
+                } else {
+                    $invoicesQuery->where('parent_id', auth()->user()->id);
+                }
+                $invoices = $invoicesQuery->get();
             } else if ($selected_status == "all") {
-                $invoices = StudentFeeManager::where('timestamp', '>=', $date_from)->where('timestamp', '<=', $date_to)->where('school_id', auth()->user()->school_id)->where('parent_id', auth()->user()->id)->where('session_id', $active_session)->get();
+                $guardianId = $this->currentGuardianId();
+                $invoicesQuery = StudentFeeManager::where('timestamp', '>=', $date_from)
+                    ->where('timestamp', '<=', $date_to)
+                    ->where('school_id', auth()->user()->school_id)
+                    ->where('session_id', $active_session);
+                if (!empty($guardianId)) {
+                    $invoicesQuery->where('guardian_id', $guardianId);
+                } else {
+                    $invoicesQuery->where('parent_id', auth()->user()->id);
+                }
+                $invoices = $invoicesQuery->get();
             }
 
 
@@ -125,7 +179,17 @@ class ParentController extends Controller
             $date_to = strtotime(date('d-M-Y') . ' 23:59:59');
             $selected_status = "";
 
-            $invoices = StudentFeeManager::where('timestamp', '>=', $date_from)->where('timestamp', '<=', $date_to)->where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->where('session_id', $active_session)->get();
+            $guardianId = $this->currentGuardianId();
+            $invoicesQuery = StudentFeeManager::where('timestamp', '>=', $date_from)
+                ->where('timestamp', '<=', $date_to)
+                ->where('school_id', auth()->user()->school_id)
+                ->where('session_id', $active_session);
+            if (!empty($guardianId)) {
+                $invoicesQuery->where('guardian_id', $guardianId);
+            } else {
+                $invoicesQuery->where('parent_id', auth()->user()->id);
+            }
+            $invoices = $invoicesQuery->get();
 
 
             return view('parent.fee_manager.student_fee_manager', ['invoices' => $invoices, 'date_from' => $date_from, 'date_to' => $date_to,  'selected_status' => $selected_status]);
@@ -147,9 +211,29 @@ class ParentController extends Controller
 
 
         if ($selected_status != "all") {
-            $invoices = StudentFeeManager::where('timestamp', '>=', $date_from)->where('timestamp', '<=', $date_to)->where('status', $selected_status)->where('parent_id', auth()->user()->id)->where('session_id', $active_session)->get();
+            $guardianId = $this->currentGuardianId();
+            $invoicesQuery = StudentFeeManager::where('timestamp', '>=', $date_from)
+                ->where('timestamp', '<=', $date_to)
+                ->where('status', $selected_status)
+                ->where('session_id', $active_session);
+            if (!empty($guardianId)) {
+                $invoicesQuery->where('guardian_id', $guardianId);
+            } else {
+                $invoicesQuery->where('parent_id', auth()->user()->id);
+            }
+            $invoices = $invoicesQuery->get();
         } else if ($selected_status == "all") {
-            $invoices = StudentFeeManager::where('timestamp', '>=', $date_from)->where('timestamp', '<=', $date_to)->where('school_id', auth()->user()->school_id)->where('parent_id', auth()->user()->id)->where('session_id', $active_session)->get();
+            $guardianId = $this->currentGuardianId();
+            $invoicesQuery = StudentFeeManager::where('timestamp', '>=', $date_from)
+                ->where('timestamp', '<=', $date_to)
+                ->where('school_id', auth()->user()->school_id)
+                ->where('session_id', $active_session);
+            if (!empty($guardianId)) {
+                $invoicesQuery->where('guardian_id', $guardianId);
+            } else {
+                $invoicesQuery->where('parent_id', auth()->user()->id);
+            }
+            $invoices = $invoicesQuery->get();
         }
 
         $classes = Classes::where('school_id', auth()->user()->school_id)->get();
@@ -202,7 +286,7 @@ class ParentController extends Controller
 
 
         $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
-        $student_data = User::where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->get();
+        $student_data = $this->childStudentsQuery()->get();
         if (!empty($student_data)) {
             $student_data = $student_data->toArray();
         }
@@ -264,7 +348,7 @@ class ParentController extends Controller
 
 
         $active_session = get_school_settings(auth()->user()->school_id)->value('running_session');
-        $student_data = User::where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->get();
+        $student_data = $this->childStudentsQuery()->get();
         if (!empty($student_data)) {
             $student_data = $student_data->toArray();
         }
@@ -284,7 +368,7 @@ class ParentController extends Controller
 
     public function routine()
     {
-        $child = User::where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->get();
+        $child = $this->childStudentsQuery()->get();
         $student_data = array();
 
         if (!empty($child)) {
@@ -320,7 +404,7 @@ class ParentController extends Controller
     public function list_of_attendence(Request $request)
     {
         
-        $child = User::where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->get();
+        $child = $this->childStudentsQuery()->get();
         $child_data = array();
 
         if (!empty($child)) {
@@ -473,7 +557,7 @@ class ParentController extends Controller
     public function marks()
     {
 
-        $child = User::where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->get();
+        $child = $this->childStudentsQuery()->get();
         $student_data = array();
 
         if (!empty($child)) {
@@ -655,7 +739,7 @@ class ParentController extends Controller
 
     public function filter()
     {
-        $child = User::where('parent_id', auth()->user()->id)->where('school_id', auth()->user()->school_id)->get();
+        $child = $this->childStudentsQuery()->get();
         $student_data = array();
 
         if (!empty($child)) {
@@ -874,6 +958,173 @@ class ParentController extends Controller
 
         // Pass the data to the view only if msg_user_details is not null
         return view('parent.message.chat_empty');
+    }
+
+    /**
+     * Parent applications (Leave / Other) - submit and track status.
+     */
+    public function applications(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $parentId = (int) auth()->user()->id;
+
+        $applications = SchoolApplication::where('school_id', $schoolId)
+            ->where('parent_id', $parentId)
+            ->orderByDesc('id')
+            ->paginate(20);
+
+        $children = $this->childStudentsQuery()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+
+        $studentIds = $applications->pluck('student_id')->filter()->unique()->values()->all();
+        $classIds = $applications->pluck('class_id')->filter()->unique()->values()->all();
+        $sectionIds = $applications->pluck('section_id')->filter()->unique()->values()->all();
+
+        $studentsById = !empty($studentIds)
+            ? User::whereIn('id', $studentIds)->select(['id', 'name'])->get()->keyBy('id')
+            : collect();
+
+        $classesById = !empty($classIds)
+            ? Classes::whereIn('id', $classIds)->select(['id', 'name'])->get()->keyBy('id')
+            : collect();
+
+        $sectionsById = !empty($sectionIds)
+            ? Section::whereIn('id', $sectionIds)->select(['id', 'name'])->get()->keyBy('id')
+            : collect();
+
+        return view('parent.applications.index', compact(
+            'applications',
+            'children',
+            'studentsById',
+            'classesById',
+            'sectionsById'
+        ));
+    }
+
+    public function applicationsStore(Request $request)
+    {
+        $schoolId = (int) auth()->user()->school_id;
+        $parentId = (int) auth()->user()->id;
+
+        $data = $request->validate([
+            'type' => ['required', 'string', 'in:leave,other'],
+            'student_id' => ['nullable', 'integer'],
+            'title' => ['required', 'string', 'max:120'],
+            'message' => ['nullable', 'string', 'max:5000'],
+            'leave_from' => ['nullable', 'date'],
+            'leave_to' => ['nullable', 'date', 'after_or_equal:leave_from'],
+            'attachment' => ['nullable', 'file', 'max:4096'],
+        ]);
+
+        $type = (string) $data['type'];
+        $studentId = !empty($data['student_id']) ? (int) $data['student_id'] : null;
+
+        if ($type === 'leave') {
+            if (empty($data['leave_from']) || empty($data['leave_to'])) {
+                return redirect()->back()->with('error', 'Please select leave from/to dates.');
+            }
+        }
+
+        if (!empty($studentId)) {
+            $isChild = $this->childStudentsQuery()
+                ->where('id', $studentId)
+                ->exists();
+            if (!$isChild) {
+                return redirect()->back()->with('error', 'Invalid student selected.');
+            }
+        }
+
+        $guardianId = $this->currentGuardianId();
+        $classId = null;
+        $sectionId = null;
+
+        if (!empty($studentId)) {
+            $activeSession = (int) get_school_settings($schoolId)->value('running_session');
+            if ($activeSession <= 0) {
+                $activeSession = (int) DB::table('sessions')->where('status', 1)->value('id');
+            }
+
+            $enrollment = Enrollment::where('school_id', $schoolId)
+                ->where('session_id', $activeSession)
+                ->where('user_id', $studentId)
+                ->orderByDesc('id')
+                ->first();
+
+            $classId = !empty($enrollment) ? (int) $enrollment->class_id : null;
+            $sectionId = !empty($enrollment) ? (int) $enrollment->section_id : null;
+        }
+
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            if (!empty($file) && $file->isValid()) {
+                $dir = public_path('assets/uploads/applications');
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0755, true);
+                }
+                $ext = strtolower((string) $file->getClientOriginalExtension());
+                $name = time() . '-' . Str::random(10) . ($ext !== '' ? ('.' . $ext) : '');
+                $file->move($dir, $name);
+                $attachmentPath = 'assets/uploads/applications/' . $name;
+            }
+        }
+
+        $created = SchoolApplication::create([
+            'school_id' => $schoolId,
+            'parent_id' => $parentId,
+            'guardian_id' => $guardianId,
+            'student_id' => $studentId,
+            'class_id' => $classId,
+            'section_id' => $sectionId,
+            'type' => $type,
+            'title' => trim((string) $data['title']),
+            'message' => !empty($data['message']) ? trim((string) $data['message']) : null,
+            'leave_from' => $type === 'leave' ? $data['leave_from'] : null,
+            'leave_to' => $type === 'leave' ? $data['leave_to'] : null,
+            'status' => 'pending',
+            'attachment_path' => $attachmentPath,
+        ]);
+
+        // Email notification to school (only for leave requests)
+        try {
+            if (
+                $type === 'leave' &&
+                !empty(get_settings('smtp_user')) &&
+                !empty(get_settings('smtp_pass')) &&
+                !empty(get_settings('smtp_host')) &&
+                !empty(get_settings('smtp_port'))
+            ) {
+                $schoolEmail = trim((string) (\App\Models\School::where('id', $schoolId)->value('email') ?? ''));
+                if ($schoolEmail !== '') {
+                    Mail::to($schoolEmail)->send(new ApplicationSubmittedEmail($created, (string) auth()->user()->name));
+                } else {
+                    // Fallback: notify all school admins
+                    $adminEmails = \App\Models\User::where('school_id', $schoolId)
+                        ->where('role_id', 2)
+                        ->pluck('email')
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
+                    foreach ($adminEmails as $email) {
+                        $email = trim((string) $email);
+                        if ($email !== '') {
+                            Mail::to($email)->send(new ApplicationSubmittedEmail($created, (string) auth()->user()->name));
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error('Application submit email failed', [
+                'school_id' => $schoolId,
+                'parent_id' => $parentId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Application submitted successfully.');
     }
 
 }

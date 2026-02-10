@@ -42,8 +42,12 @@
             <h2 class="head-sc-one">{{ $student_details->name }}</h2>
             <div class="dv-sc-four">
               <div class="icard">
-                <span>{{ get_phrase('Code') }} : </span>
-                <span class="icard_st_dt">{{ null_checker($student_details->code) }}</span>
+                <span>{{ get_phrase('Admission no') }} : </span>
+                <span class="icard_st_dt">{{ null_checker($student_details->admission_no ?? $student_details->code) }}</span>
+              </div>
+              <div class="icard">
+                <span>{{ get_phrase('Enrollment no') }} : </span>
+                <span class="icard_st_dt">{{ null_checker($student_details->enrollment_no ?? '') }}</span>
               </div>
               <div class="icard">
                 <span>{{ get_phrase('Class') }} : </span>
@@ -62,8 +66,12 @@
                 @endif
               </div>
               <div class="icard">
-                <span>{{ get_phrase('Parent') }} : </span>
-                <span class="icard_st_dt">{{ null_checker($student_details->parent_name) }}</span>
+                <span>{{ get_phrase('Father name') }} : </span>
+                <span class="icard_st_dt">{{ null_checker($student_details->father_name ?? $student_details->parent_name) }}</span>
+              </div>
+              <div class="icard">
+                <span>{{ get_phrase('Parent ID card') }} : </span>
+                <span class="icard_st_dt">{{ null_checker($student_details->parent_id_card ?? '') }}</span>
               </div>
               <div class="icard">
                 <span>{{ get_phrase('Blood') }} : </span>

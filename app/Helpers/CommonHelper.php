@@ -399,14 +399,127 @@ if (!function_exists('random')) {
 // RANDOM NUMBER GENERATOR FOR STUDENT CODE
 if (! function_exists('student_code')) {
   function student_code($length_of_string = 8) {
-    // String of all numeric character
+    // Backward compatible: if we have a school context, use the configured pattern generator.
+    try {
+      if (function_exists('auth') && auth()->check() && !empty(auth()->user()->school_id)) {
+        return generate_student_number((int) auth()->user()->school_id, 'admission');
+      }
+    } catch (\Throwable $e) {
+      // ignore
+    }
+
+    // Fallback (legacy random)
     $str_result = '0123456789';
-    // Shufle the $str_result and returns substring of specified length
     $unique_id = substr(str_shuffle($str_result), 0, $length_of_string);
     $splited_unique_id = str_split($unique_id, 4);
     $running_year = date('Y');
-    $student_code = $running_year.'-'.$splited_unique_id[0].'-'.$splited_unique_id[1];
-    return $student_code;
+    return $running_year.'-'.$splited_unique_id[0].'-'.$splited_unique_id[1];
+  }
+}
+
+// Normalize Pakistan CNIC / ID card number (digits only)
+if (! function_exists('normalize_id_card_no')) {
+  function normalize_id_card_no($value = '') {
+    $value = (string) ($value ?? '');
+    $digits = preg_replace('/\D+/', '', $value);
+    return $digits ?: '';
+  }
+}
+
+// Validate Pakistan CNIC / ID card number (must be 13 digits after normalization)
+if (! function_exists('is_valid_id_card_no')) {
+  function is_valid_id_card_no($value = ''): bool {
+    $digits = normalize_id_card_no($value);
+    return $digits !== '' && strlen($digits) === 13;
+  }
+}
+
+// Generate student admission/enrollment number based on school pattern
+if (! function_exists('generate_student_number')) {
+  function generate_student_number(int $school_id, string $type = 'admission'): string {
+    $type = strtolower(trim($type));
+    if (!in_array($type, ['admission', 'enrollment', 'slc'], true)) {
+      $type = 'admission';
+    }
+
+    $patternColumn = $type . '_number_pattern';
+    $pattern = (string) (DB::table('schools')->where('id', $school_id)->value($patternColumn) ?? '');
+
+    if ($pattern === '') {
+      // Default patterns
+      $pattern = ($type === 'slc') ? 'SLC-{YYYY}-{SEQ:4}' : '{YYYY}-{SEQ:5}';
+    }
+
+    // Must contain a sequence placeholder
+    if (!preg_match('/\{SEQ:(\d{1,2})\}/', $pattern, $m)) {
+      // Force uniqueness even if admin saved a bad pattern
+      $pattern = '{YYYY}-{SEQ:5}';
+      $m = [null, '5'];
+    }
+
+    $pad = (int) $m[1];
+    $pad = ($pad >= 1 && $pad <= 12) ? $pad : 5;
+
+    $year = (int) date('Y');
+    $yy = substr((string) $year, -2);
+    $mm = date('m');
+
+    // Atomic increment per school/type/year
+    $next = 1;
+    DB::transaction(function () use ($school_id, $type, $year, &$next) {
+      $row = DB::table('student_number_sequences')
+        ->where('school_id', $school_id)
+        ->where('type', $type)
+        ->where('year', $year)
+        ->lockForUpdate()
+        ->first();
+
+      if ($row) {
+        $next = (int) $row->last_seq + 1;
+        DB::table('student_number_sequences')
+          ->where('id', $row->id)
+          ->update(['last_seq' => $next, 'updated_at' => date('Y-m-d H:i:s')]);
+      } else {
+        $next = 1;
+        DB::table('student_number_sequences')->insert([
+          'school_id' => $school_id,
+          'type' => $type,
+          'year' => $year,
+          'last_seq' => $next,
+          'created_at' => date('Y-m-d H:i:s'),
+          'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+      }
+    });
+
+    $seq = str_pad((string) $next, $pad, '0', STR_PAD_LEFT);
+
+    $out = $pattern;
+    $out = str_replace(['{YYYY}', '{YY}', '{MM}'], [(string) $year, (string) $yy, (string) $mm], $out);
+    $out = preg_replace('/\{SEQ:\d{1,2}\}/', $seq, $out, 1);
+
+    return $out;
+  }
+}
+
+// RANDOM NUMBER GENERATOR FOR ENROLLMENT NUMBER
+if (! function_exists('enrollment_number')) {
+  function enrollment_number($length_of_string = 10) {
+    // Backward compatible: if we have a school context, use the configured pattern generator.
+    try {
+      if (function_exists('auth') && auth()->check() && !empty(auth()->user()->school_id)) {
+        return generate_student_number((int) auth()->user()->school_id, 'enrollment');
+      }
+    } catch (\Throwable $e) {
+      // ignore
+    }
+
+    // Fallback (legacy random)
+    $str_result = '0123456789';
+    $unique_id = substr(str_shuffle($str_result), 0, $length_of_string);
+    $splited_unique_id = str_split($unique_id, 5);
+    $running_year = date('Y');
+    return $running_year.'-'.$splited_unique_id[0].'-'.$splited_unique_id[1];
   }
 }
 

@@ -515,7 +515,21 @@
     <script src="{{ asset('assets/js/html2canvas.min.js') }}"></script>
 
     <!---Image Gallery--->
+    <script>
+        // Prevent `lightbox-plus-jquery.js` from overwriting the main jQuery instance
+        // (it bundles its own jQuery, which breaks Select2 + daterangepicker).
+        window.__cm_main_jquery = window.jQuery;
+        window.__cm_main_$ = window.$;
+    </script>
     <script src="{{ asset('assets/js/lightbox-plus-jquery.js') }}"></script>
+    <script>
+        if (window.__cm_main_jquery) {
+            window.jQuery = window.__cm_main_jquery;
+        }
+        if (window.__cm_main_$) {
+            window.$ = window.__cm_main_$;
+        }
+    </script>
 
     <!--Toaster Script-->
     <script src="{{ asset('assets/js/toastr.min.js') }}"></script>
