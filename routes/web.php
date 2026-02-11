@@ -55,6 +55,8 @@ Route::get('teacher/account-disable', function () {
     return view('teacher.account_disable');
 })->name('teacher.account_disable');
 
+
+
 Route::get('librarian/account-disable', function () {
     return view('librarian.account_disable');
 })->name('librarian.account_disable');
