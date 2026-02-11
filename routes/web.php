@@ -68,6 +68,10 @@ Route::get('student/account-disable', function () {
 })->name('student.account_disable');
 
 
+
+
+
+
 //Superadmin routes are here
 Route::controller(SuperAdminController::class)->middleware('auth','superAdmin')->group(function () {
 
