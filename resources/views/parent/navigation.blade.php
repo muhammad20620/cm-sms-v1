@@ -68,6 +68,10 @@
       {{-- <span class="logo_name">{{ get_settings('navbar_title') }}</span> --}}
     </div>
 		<div class="closeIcon">
+
+
+    
+    
       <span>
         <img src="{{ asset('assets/images/close.svg') }}">
       </span>
